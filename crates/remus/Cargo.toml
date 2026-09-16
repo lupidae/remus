@@ -1,0 +1,35 @@
+[package]
+name = "remus"
+description = "Export a PostgreSQL schema as JSON, Mermaid, DBML or SQL DDL"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "remus"
+path = "src/main.rs"
+
+[dependencies]
+remus-core.workspace = true
+thiserror.workspace = true
+
+clap = { version = "4.6.7", default-features = false, features = [
+    "std",
+    "derive",
+    "help",
+    "usage",
+    "error-context",
+    "suggestions",
+    "wrap_help",
+    "env", # DATABASE_URL fallback for --url
+] }
+tokio = { version = "1.53.1", default-features = false, features = ["rt-multi-thread", "macros"] }
+tokio-postgres = { version = "0.7.18", default-features = false, features = ["runtime"] }
+# TLS through rustls so one static binary reaches Neon / Supabase / RDS without
+# a system OpenSSL. `ring` is the only enabled provider, which makes it the
+# process default without an explicit install call.
+tokio-postgres-rustls = "0.14.0"
+rustls = { version = "0.23.45", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "1.0.9"
