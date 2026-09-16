@@ -1379,7 +1379,6 @@
       "parent_schema": "audit"
     }
   ],
-  "generated_at": "2026-09-16T17:28:10.658473+00:00",
   "remus_version": "0.1",
   "server_version": "16.14 (Debian 16.14-1.pgdg13+1)"
 }

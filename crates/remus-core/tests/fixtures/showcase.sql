@@ -111,8 +111,9 @@ CREATE TABLE audit.events_default PARTITION OF audit.events DEFAULT;
 
 CREATE UNLOGGED TABLE audit.scratch (id int PRIMARY KEY);
 
--- Row level security with a restrictive policy and a role-scoped one.
-CREATE ROLE showcase_reader NOLOGIN;
+-- Row level security with a restrictive policy and a role-scoped one. Roles are
+-- cluster-wide, so tolerate one left over from a previous run.
+DO $$ BEGIN CREATE ROLE showcase_reader NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 ALTER TABLE shop.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shop.orders FORCE ROW LEVEL SECURITY;
 CREATE POLICY orders_owner ON shop.orders
