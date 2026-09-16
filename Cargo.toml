@@ -1,0 +1,25 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/lupidae/remus"
+rust-version = "1.97"
+
+[workspace.dependencies]
+remus-core = { path = "crates/remus-core", version = "0.1.0" }
+
+serde = { version = "1.0.229", default-features = false, features = ["derive", "std"] }
+# preserve_order: emitted JSON keeps the model's field order, so diffs between two
+# snapshots stay readable and the fixture files are stable across regenerations.
+serde_json = { version = "1.0.151", default-features = false, features = ["std", "preserve_order"] }
+thiserror = { version = "2.0.20", default-features = false }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+strip = true
