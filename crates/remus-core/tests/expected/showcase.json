@@ -1,0 +1,1385 @@
+{
+  "remus_version": "0.1",
+  "generated_at": "2026-09-16T17:28:10.658473+00:00",
+  "database": "remus_showcase",
+  "server_version": "16.14 (Debian 16.14-1.pgdg13+1)",
+  "entities": [
+    {
+      "schema": "audit",
+      "name": "events",
+      "kind": "p",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": "RANGE (occurred_at)",
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": "a",
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "customer_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "type_schema": "pg_catalog",
+          "type_name": "jsonb",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "events_customer_id_fkey",
+          "kind": "f",
+          "columns": [
+            "customer_id"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "customers",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "a",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (customer_id) REFERENCES shop.customers(id)",
+          "comment": null
+        },
+        {
+          "name": "events_pkey",
+          "kind": "p",
+          "columns": [
+            "id",
+            "occurred_at"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id, occurred_at)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "audit",
+      "name": "scratch",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": true,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "type_schema": "pg_catalog",
+          "type_name": "int4",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "scratch_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "customer_profiles",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "customer_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "bio",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "customer_profiles_customer_id_fkey",
+          "kind": "f",
+          "columns": [
+            "customer_id"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "customers",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "c",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (customer_id) REFERENCES shop.customers(id) ON DELETE CASCADE",
+          "comment": null
+        },
+        {
+          "name": "customer_profiles_pkey",
+          "kind": "p",
+          "columns": [
+            "customer_id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (customer_id)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "customers",
+      "kind": "r",
+      "comment": "People who buy things",
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": "a",
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "email",
+          "type": "shop.email",
+          "type_schema": "shop",
+          "type_name": "email",
+          "type_kind": "d",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": "Login identifier; unique per customer"
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "select",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "address",
+          "type": "shop.address",
+          "type_schema": "shop",
+          "type_name": "address",
+          "type_kind": "c",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "tags",
+          "type": "text[]",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": true,
+          "not_null": true,
+          "default": "'{}'::text[]",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "referrer_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": "now()",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "customers_referrer_id_fkey",
+          "kind": "f",
+          "columns": [
+            "referrer_id"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "customers",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "n",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (referrer_id) REFERENCES shop.customers(id) ON DELETE SET NULL",
+          "comment": null
+        },
+        {
+          "name": "customers_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        },
+        {
+          "name": "customers_email_key",
+          "kind": "u",
+          "columns": [
+            "email"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "UNIQUE (email)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "daily_totals",
+      "kind": "m",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": " SELECT date_trunc('day'::text, placed_at) AS day,\n    sum(total) AS total\n   FROM shop.orders\n  GROUP BY (date_trunc('day'::text, placed_at));",
+      "depends_on": [
+        {
+          "schema": "shop",
+          "name": "orders"
+        }
+      ],
+      "columns": [
+        {
+          "name": "day",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "total",
+          "type": "numeric",
+          "type_schema": "pg_catalog",
+          "type_name": "numeric",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "open_orders",
+      "kind": "v",
+      "comment": "Orders still in flight",
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": " SELECT id,\n    customer_id,\n    total\n   FROM shop.orders o\n  WHERE status = ANY (ARRAY['placed'::shop.order_status, 'shipped'::shop.order_status]);",
+      "depends_on": [
+        {
+          "schema": "shop",
+          "name": "orders"
+        }
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "customer_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "total",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "open_orders_by_customer",
+      "kind": "v",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": " SELECT c.email,\n    count(*) AS open_orders\n   FROM shop.open_orders oo\n     JOIN shop.customers c ON c.id = oo.customer_id\n  GROUP BY c.email;",
+      "depends_on": [
+        {
+          "schema": "shop",
+          "name": "customers"
+        },
+        {
+          "schema": "shop",
+          "name": "open_orders"
+        }
+      ],
+      "columns": [
+        {
+          "name": "email",
+          "type": "shop.email",
+          "type_schema": "shop",
+          "type_name": "email",
+          "type_kind": "d",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "open_orders",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "order_products",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "order_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "type_schema": "pg_catalog",
+          "type_name": "uuid",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": "now()",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "order_products_order_id_fkey",
+          "kind": "f",
+          "columns": [
+            "order_id"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "orders",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "c",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (order_id) REFERENCES shop.orders(id) ON DELETE CASCADE",
+          "comment": null
+        },
+        {
+          "name": "order_products_product_id_fkey",
+          "kind": "f",
+          "columns": [
+            "product_id"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "products",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "a",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (product_id) REFERENCES shop.products(id)",
+          "comment": null
+        },
+        {
+          "name": "order_products_pkey",
+          "kind": "p",
+          "columns": [
+            "order_id",
+            "product_id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (order_id, product_id)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "orders",
+      "kind": "r",
+      "comment": null,
+      "rls": true,
+      "rls_forced": true,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": "nextval('shop.orders_id_seq'::regclass)",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "customer_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "status",
+          "type": "shop.order_status",
+          "type_schema": "shop",
+          "type_name": "order_status",
+          "type_kind": "e",
+          "is_array": false,
+          "not_null": true,
+          "default": "'draft'::shop.order_status",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "subtotal",
+          "type": "shop.money_cents",
+          "type_schema": "shop",
+          "type_name": "money_cents",
+          "type_kind": "d",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "tax",
+          "type": "shop.money_cents",
+          "type_schema": "shop",
+          "type_name": "money_cents",
+          "type_kind": "d",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "total",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": "((subtotal)::bigint + (tax)::bigint)",
+          "identity": null,
+          "generated": "s",
+          "comment": null
+        },
+        {
+          "name": "placed_at",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "orders_placed_when_not_draft",
+          "kind": "c",
+          "columns": [
+            "status",
+            "placed_at"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "CHECK (((status = 'draft'::shop.order_status) OR (placed_at IS NOT NULL)))",
+          "comment": null
+        },
+        {
+          "name": "orders_customer_id_fkey",
+          "kind": "f",
+          "columns": [
+            "customer_id"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "customers",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "r",
+          "on_delete": "c",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (customer_id) REFERENCES shop.customers(id) ON UPDATE RESTRICT ON DELETE CASCADE",
+          "comment": null
+        },
+        {
+          "name": "orders_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "orders_customer_idx",
+          "unique": false,
+          "partial": false,
+          "definition": "CREATE INDEX orders_customer_idx ON shop.orders USING btree (customer_id)"
+        },
+        {
+          "name": "orders_note_lower_idx",
+          "unique": true,
+          "partial": true,
+          "definition": "CREATE UNIQUE INDEX orders_note_lower_idx ON shop.orders USING btree (lower(note)) WHERE (note IS NOT NULL)"
+        },
+        {
+          "name": "orders_open_idx",
+          "unique": false,
+          "partial": true,
+          "definition": "CREATE INDEX orders_open_idx ON shop.orders USING btree (placed_at DESC) WHERE (status = ANY (ARRAY['placed'::shop.order_status, 'shipped'::shop.order_status]))"
+        }
+      ],
+      "policies": [
+        {
+          "name": "orders_no_cancelled",
+          "command": "r",
+          "permissive": false,
+          "roles": [
+            "showcase_reader"
+          ],
+          "using": "(status <> 'cancelled'::shop.order_status)",
+          "check": null
+        },
+        {
+          "name": "orders_owner",
+          "command": "*",
+          "permissive": true,
+          "roles": [],
+          "using": "(customer_id = (current_setting('app.customer_id'::text))::bigint)",
+          "check": "(customer_id = (current_setting('app.customer_id'::text))::bigint)"
+        }
+      ]
+    },
+    {
+      "schema": "shop",
+      "name": "products",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "type_schema": "pg_catalog",
+          "type_name": "uuid",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": "gen_random_uuid()",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "sku",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "price",
+          "type": "shop.money_cents",
+          "type_schema": "shop",
+          "type_name": "money_cents",
+          "type_kind": "d",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "weight_g",
+          "type": "integer",
+          "type_schema": "pg_catalog",
+          "type_name": "int4",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "statuses",
+          "type": "shop.order_status[]",
+          "type_schema": "shop",
+          "type_name": "order_status",
+          "type_kind": "e",
+          "is_array": true,
+          "not_null": true,
+          "default": "'{}'::shop.order_status[]",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "products_weight_g_check",
+          "kind": "c",
+          "columns": [
+            "weight_g"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "CHECK ((weight_g > 0))",
+          "comment": null
+        },
+        {
+          "name": "products_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        },
+        {
+          "name": "products_sku_key",
+          "kind": "u",
+          "columns": [
+            "sku"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "UNIQUE (sku)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "promotions",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": "d",
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "type_schema": "pg_catalog",
+          "type_name": "uuid",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "during",
+          "type": "tstzrange",
+          "type_schema": "pg_catalog",
+          "type_name": "tstzrange",
+          "type_kind": "r",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "promotions_product_id_fkey",
+          "kind": "f",
+          "columns": [
+            "product_id"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "products",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "a",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (product_id) REFERENCES shop.products(id)",
+          "comment": null
+        },
+        {
+          "name": "promotions_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        },
+        {
+          "name": "promotions_product_id_during_excl",
+          "kind": "x",
+          "columns": [
+            "product_id",
+            "during"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "EXCLUDE USING gist (product_id WITH =, during WITH &&)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "stock",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "type_schema": "pg_catalog",
+          "type_name": "uuid",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "warehouse_code",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "region",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "type_schema": "pg_catalog",
+          "type_name": "int4",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": "0",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "stock_product_id_fkey",
+          "kind": "f",
+          "columns": [
+            "product_id"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "products",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "a",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (product_id) REFERENCES shop.products(id)",
+          "comment": null
+        },
+        {
+          "name": "stock_warehouse_fkey",
+          "kind": "f",
+          "columns": [
+            "warehouse_code",
+            "region"
+          ],
+          "ref_schema": "shop",
+          "ref_table": "warehouses",
+          "ref_columns": [
+            "code",
+            "region"
+          ],
+          "on_update": "a",
+          "on_delete": "a",
+          "deferrable": true,
+          "definition": "FOREIGN KEY (warehouse_code, region) REFERENCES shop.warehouses(code, region) DEFERRABLE INITIALLY DEFERRED",
+          "comment": null
+        },
+        {
+          "name": "stock_pkey",
+          "kind": "p",
+          "columns": [
+            "product_id",
+            "region",
+            "warehouse_code"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (product_id, region, warehouse_code)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "shop",
+      "name": "warehouses",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "region",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "warehouses_pkey",
+          "kind": "p",
+          "columns": [
+            "region",
+            "code"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (region, code)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    }
+  ],
+  "enums": [
+    {
+      "schema": "shop",
+      "name": "order_status",
+      "labels": [
+        "draft",
+        "placed",
+        "shipped",
+        "cancelled"
+      ],
+      "comment": "Lifecycle of an order"
+    }
+  ],
+  "domains": [
+    {
+      "schema": "shop",
+      "name": "email",
+      "base_type": "text",
+      "not_null": false,
+      "default": null,
+      "constraints": [
+        "CHECK ((VALUE ~ '@'::text))"
+      ],
+      "comment": null
+    },
+    {
+      "schema": "shop",
+      "name": "money_cents",
+      "base_type": "bigint",
+      "not_null": true,
+      "default": "0",
+      "constraints": [
+        "CHECK ((VALUE >= 0))"
+      ],
+      "comment": "Amounts are integers of cents"
+    }
+  ],
+  "composites": [
+    {
+      "schema": "shop",
+      "name": "address",
+      "attributes": [
+        {
+          "name": "street",
+          "type": "text"
+        },
+        {
+          "name": "city",
+          "type": "text"
+        },
+        {
+          "name": "zip code",
+          "type": "text"
+        }
+      ],
+      "comment": null
+    }
+  ],
+  "partitions": [
+    {
+      "parent_schema": "audit",
+      "parent": "events",
+      "child_schema": "audit",
+      "child": "events_2026",
+      "bound": "FOR VALUES FROM ('2026-01-01 00:00:00+00') TO ('2027-01-01 00:00:00+00')"
+    },
+    {
+      "parent_schema": "audit",
+      "parent": "events",
+      "child_schema": "audit",
+      "child": "events_default",
+      "bound": "DEFAULT"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "btree_gist",
+      "schema": "public",
+      "version": "1.7"
+    },
+    {
+      "name": "pg_trgm",
+      "schema": "public",
+      "version": "1.6"
+    },
+    {
+      "name": "pgcrypto",
+      "schema": "public",
+      "version": "1.3"
+    }
+  ]
+}

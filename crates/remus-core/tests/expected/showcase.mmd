@@ -1,0 +1,70 @@
+erDiagram
+    audit_events {
+        bigint id PK "identity"
+        timestamp_with_time_zone occurred_at PK
+        bigint customer_id FK "nullable"
+        jsonb payload
+    }
+    audit_scratch {
+        integer id PK
+    }
+    shop_customer_profiles {
+        bigint customer_id PK,FK
+        text bio "nullable"
+    }
+    shop_customers {
+        bigint id PK "identity"
+        email email UK "Login identifier; unique per customer"
+        text full_name
+        text select "nullable"
+        address address "composite, nullable"
+        text[] tags
+        bigint referrer_id FK "nullable"
+        timestamp_with_time_zone created_at
+    }
+    shop_order_products {
+        bigint order_id PK,FK
+        uuid product_id PK,FK
+        timestamp_with_time_zone created_at
+    }
+    shop_orders {
+        bigint id PK
+        bigint customer_id FK
+        order_status status "enum"
+        money_cents subtotal "domain over bigint, nullable"
+        money_cents tax "domain over bigint, nullable"
+        bigint total "generated, nullable"
+        timestamp_with_time_zone placed_at "nullable"
+        text note "nullable"
+    }
+    shop_products {
+        uuid id PK
+        text sku UK
+        money_cents price "domain over bigint, nullable"
+        integer weight_g "nullable"
+        order_status[] statuses "enum"
+    }
+    shop_promotions {
+        bigint id PK "identity"
+        uuid product_id FK
+        tstzrange during
+    }
+    shop_stock {
+        uuid product_id PK,FK
+        text warehouse_code PK,FK
+        text region PK,FK
+        integer quantity
+    }
+    shop_warehouses {
+        text region PK
+        text code PK
+    }
+    shop_customers |o--o{ audit_events : "customer_id"
+    shop_customers ||--o| shop_customer_profiles : "customer_id"
+    shop_customers |o--o{ shop_customers : "referrer_id"
+    shop_orders ||--o{ shop_order_products : "order_id"
+    shop_products ||--o{ shop_order_products : "product_id"
+    shop_customers ||--o{ shop_orders : "customer_id"
+    shop_products ||--o{ shop_promotions : "product_id"
+    shop_products ||--o{ shop_stock : "product_id"
+    shop_warehouses ||--o{ shop_stock : "warehouse_code, region"
