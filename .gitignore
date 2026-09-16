@@ -7,3 +7,6 @@
 /out
 # drafts pulled from the design conversation; reference only, never committed
 /_incoming
+
+# wrangler scratch
+/.wrangler

@@ -63,6 +63,6 @@ site: examples
 site-serve:
     python3 -m http.server 8787 --directory site
 
-# publish the landing page to Cloudflare Pages (needs `npx wrangler login` once)
+# publish the landing page to Cloudflare (wrangler.jsonc; needs `npx wrangler login` once)
 site-deploy: site
-    npx --yes wrangler pages deploy site --project-name remus --branch main --commit-dirty=true
+    npx --yes wrangler deploy

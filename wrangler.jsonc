@@ -1,0 +1,12 @@
+// Landing page hosting: Cloudflare Pages, now served as Workers static assets.
+// Deploy with `just site-deploy`. No Worker code; only the files under site/.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "remus",
+  "compatibility_date": "2026-09-15",
+  "assets": {
+    "directory": "./site",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

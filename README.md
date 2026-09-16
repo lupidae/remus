@@ -1,5 +1,7 @@
 # remus
 
+**https://remus.lefortlucas1.workers.dev**
+
 Export a PostgreSQL schema as **JSON**, **Mermaid**, **DBML** or **SQL DDL**, from one
 static binary. Postgres-native: enums, domains, composite types, partitions,
 generated and identity columns, row level security, views and materialized views
@@ -97,6 +99,9 @@ makes, and it is deliberately conservative. Polymorphic associations
 just check    # fmt (nightly rustfmt), check, clippy -D warnings, tests
 just golden   # accept emitter output changes, then review the diff
 just demo     # run against DATABASE_URL, everything under ./out
+just examples # regenerate examples/*/out from each schema.sql
+just site     # refresh the landing page's copy of the blog example
+just site-deploy  # publish site/ to Cloudflare (wrangler.jsonc)
 ```
 
 Emitter tests are golden files: `crates/remus-core/tests/fixtures/showcase.json`
