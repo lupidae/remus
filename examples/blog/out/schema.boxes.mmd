@@ -1,0 +1,12 @@
+erDiagram
+    comments
+    posts
+    profiles
+    tags
+    users
+    users |o--o{ comments : "author_id"
+    comments |o--o{ comments : "parent_id"
+    posts ||--o{ comments : "post_id"
+    posts }o--o{ tags : "post_tags"
+    users ||--o{ posts : "author_id"
+    users ||--o| profiles : "user_id"

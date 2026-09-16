@@ -1,6 +1,7 @@
 {
   "remus_version": "0.1",
-  "database": "remus_showcase",
+  "generated_at": "2026-09-16T18:17:32.850599+00:00",
+  "database": "remus_example_showcase",
   "server_version": "16.14 (Debian 16.14-1.pgdg13+1)",
   "entities": [
     {

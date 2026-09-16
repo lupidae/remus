@@ -22,6 +22,9 @@ remus --url ... --conceptual --no-attributes
 `--url` falls back to `DATABASE_URL`. `--schema` restricts to named schemas.
 `--views` adds views and materialized views to diagrams.
 
+See **[examples/](examples/README.md)** for the four outputs side by side on two sample
+schemas, with the diagrams rendered.
+
 ## Install
 
 ```bash

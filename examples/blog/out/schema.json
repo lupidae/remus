@@ -1,0 +1,819 @@
+{
+  "remus_version": "0.1",
+  "generated_at": "2026-09-16T18:17:32.321566+00:00",
+  "database": "remus_example_blog",
+  "server_version": "16.14 (Debian 16.14-1.pgdg13+1)",
+  "entities": [
+    {
+      "schema": "public",
+      "name": "comments",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": "a",
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "post_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "author_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "parent_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "posted_at",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": "now()",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "comments_author_id_fkey",
+          "kind": "f",
+          "columns": [
+            "author_id"
+          ],
+          "ref_schema": "public",
+          "ref_table": "users",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "n",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE SET NULL",
+          "comment": null
+        },
+        {
+          "name": "comments_parent_id_fkey",
+          "kind": "f",
+          "columns": [
+            "parent_id"
+          ],
+          "ref_schema": "public",
+          "ref_table": "comments",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "c",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (parent_id) REFERENCES public.comments(id) ON DELETE CASCADE",
+          "comment": null
+        },
+        {
+          "name": "comments_post_id_fkey",
+          "kind": "f",
+          "columns": [
+            "post_id"
+          ],
+          "ref_schema": "public",
+          "ref_table": "posts",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "c",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE",
+          "comment": null
+        },
+        {
+          "name": "comments_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "public",
+      "name": "post_tags",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "post_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "tag_id",
+          "type": "integer",
+          "type_schema": "pg_catalog",
+          "type_name": "int4",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "post_tags_post_id_fkey",
+          "kind": "f",
+          "columns": [
+            "post_id"
+          ],
+          "ref_schema": "public",
+          "ref_table": "posts",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "c",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE",
+          "comment": null
+        },
+        {
+          "name": "post_tags_tag_id_fkey",
+          "kind": "f",
+          "columns": [
+            "tag_id"
+          ],
+          "ref_schema": "public",
+          "ref_table": "tags",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "c",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE",
+          "comment": null
+        },
+        {
+          "name": "post_tags_pkey",
+          "kind": "p",
+          "columns": [
+            "post_id",
+            "tag_id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (post_id, tag_id)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "public",
+      "name": "posts",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": "a",
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "author_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": "URL fragment, unique per site"
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "status",
+          "type": "public.post_status",
+          "type_schema": "public",
+          "type_name": "post_status",
+          "type_kind": "e",
+          "is_array": false,
+          "not_null": true,
+          "default": "'draft'::public.post_status",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "posts_published_have_a_date",
+          "kind": "c",
+          "columns": [
+            "status",
+            "published_at"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "CHECK (((status <> 'published'::public.post_status) OR (published_at IS NOT NULL)))",
+          "comment": null
+        },
+        {
+          "name": "posts_author_id_fkey",
+          "kind": "f",
+          "columns": [
+            "author_id"
+          ],
+          "ref_schema": "public",
+          "ref_table": "users",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "a",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (author_id) REFERENCES public.users(id)",
+          "comment": null
+        },
+        {
+          "name": "posts_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        },
+        {
+          "name": "posts_slug_key",
+          "kind": "u",
+          "columns": [
+            "slug"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "UNIQUE (slug)",
+          "comment": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "posts_author_idx",
+          "unique": false,
+          "partial": false,
+          "definition": "CREATE INDEX posts_author_idx ON public.posts USING btree (author_id)"
+        },
+        {
+          "name": "posts_published_idx",
+          "unique": false,
+          "partial": true,
+          "definition": "CREATE INDEX posts_published_idx ON public.posts USING btree (published_at DESC) WHERE (status = 'published'::public.post_status)"
+        }
+      ],
+      "policies": []
+    },
+    {
+      "schema": "public",
+      "name": "profiles",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "bio",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "website",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "profiles_user_id_fkey",
+          "kind": "f",
+          "columns": [
+            "user_id"
+          ],
+          "ref_schema": "public",
+          "ref_table": "users",
+          "ref_columns": [
+            "id"
+          ],
+          "on_update": "a",
+          "on_delete": "c",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE",
+          "comment": null
+        },
+        {
+          "name": "profiles_pkey",
+          "kind": "p",
+          "columns": [
+            "user_id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (user_id)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "public",
+      "name": "published_posts",
+      "kind": "v",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": " SELECT p.id,\n    p.title,\n    p.slug,\n    u.name AS author,\n    p.published_at\n   FROM public.posts p\n     JOIN public.users u ON u.id = p.author_id\n  WHERE p.status = 'published'::public.post_status;",
+      "depends_on": [
+        {
+          "schema": "public",
+          "name": "posts"
+        },
+        {
+          "schema": "public",
+          "name": "users"
+        }
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "author",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": false,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "public",
+      "name": "tags",
+      "kind": "r",
+      "comment": null,
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "type_schema": "pg_catalog",
+          "type_name": "int4",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": "a",
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "tags_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        },
+        {
+          "name": "tags_name_key",
+          "kind": "u",
+          "columns": [
+            "name"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "UNIQUE (name)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    },
+    {
+      "schema": "public",
+      "name": "users",
+      "kind": "r",
+      "comment": "Anyone who can log in",
+      "rls": false,
+      "rls_forced": false,
+      "unlogged": false,
+      "partition_key": null,
+      "view_definition": null,
+      "depends_on": [],
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "type_schema": "pg_catalog",
+          "type_name": "int8",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": "a",
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "type_schema": "pg_catalog",
+          "type_name": "text",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "type_schema": "pg_catalog",
+          "type_name": "timestamptz",
+          "type_kind": "b",
+          "is_array": false,
+          "not_null": true,
+          "default": "now()",
+          "identity": null,
+          "generated": null,
+          "comment": null
+        }
+      ],
+      "constraints": [
+        {
+          "name": "users_pkey",
+          "kind": "p",
+          "columns": [
+            "id"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "comment": null
+        },
+        {
+          "name": "users_email_key",
+          "kind": "u",
+          "columns": [
+            "email"
+          ],
+          "ref_schema": null,
+          "ref_table": null,
+          "ref_columns": [],
+          "on_update": null,
+          "on_delete": null,
+          "deferrable": false,
+          "definition": "UNIQUE (email)",
+          "comment": null
+        }
+      ],
+      "indexes": [],
+      "policies": []
+    }
+  ],
+  "enums": [
+    {
+      "schema": "public",
+      "name": "post_status",
+      "labels": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "comment": null
+    }
+  ],
+  "domains": [],
+  "composites": [],
+  "partitions": [],
+  "extensions": []
+}

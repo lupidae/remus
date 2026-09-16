@@ -1353,11 +1353,6 @@
       "version": "1.7"
     },
     {
-      "name": "pg_trgm",
-      "schema": "public",
-      "version": "1.6"
-    },
-    {
       "name": "pgcrypto",
       "schema": "public",
       "version": "1.3"

@@ -1,0 +1,18 @@
+erDiagram
+    audit_events
+    audit_scratch
+    shop_customer_profiles
+    shop_customers
+    shop_orders
+    shop_products
+    shop_promotions
+    shop_stock
+    shop_warehouses
+    shop_customers |o--o{ audit_events : "customer_id"
+    shop_customers ||--o| shop_customer_profiles : "customer_id"
+    shop_customers |o--o{ shop_customers : "referrer_id"
+    shop_orders }o--o{ shop_products : "order_products"
+    shop_customers ||--o{ shop_orders : "customer_id"
+    shop_products ||--o{ shop_promotions : "product_id"
+    shop_products ||--o{ shop_stock : "product_id"
+    shop_warehouses ||--o{ shop_stock : "warehouse_code, region"

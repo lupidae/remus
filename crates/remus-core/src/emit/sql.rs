@@ -68,10 +68,11 @@ fn write_schemas(out: &mut String, schema: &Schema) {
         .chain(schema.extensions.iter().map(|x| x.schema.as_str()))
         .filter(|name| *name != "public")
         .collect();
+    let any = !names.is_empty();
     for name in names {
         let _ = writeln!(out, "CREATE SCHEMA IF NOT EXISTS {};", quote_ident(name));
     }
-    if !schema.entities.is_empty() {
+    if any {
         out.push('\n');
     }
 }
