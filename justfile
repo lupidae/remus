@@ -52,3 +52,17 @@ examples PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres":
         target/debug/remus -u "$scratch" -f mermaid --conceptual --no-attributes > "$dir/out/schema.boxes.mmd"
         psql "{{PGURL}}" -qc "DROP DATABASE $name WITH (FORCE)"
     done
+
+# copy the blog example into the static site so the landing page shows real output
+site: examples
+    rm -rf site/examples && mkdir -p site/examples/blog/out
+    cp examples/blog/schema.sql site/examples/blog/
+    cp examples/blog/out/schema.{mmd,conceptual.mmd,views.mmd,dbml,sql,json} site/examples/blog/out/
+
+# serve the landing page locally
+site-serve:
+    python3 -m http.server 8787 --directory site
+
+# publish the landing page to Cloudflare Pages (needs `npx wrangler login` once)
+site-deploy: site
+    npx --yes wrangler pages deploy site --project-name remus --branch main --commit-dirty=true

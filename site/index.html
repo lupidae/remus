@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>remus — your Postgres schema, as text</title>
+<meta name="description" content="One static binary that introspects a PostgreSQL database and emits JSON, Mermaid, DBML and SQL DDL. Postgres-native: enums, domains, partitions, RLS and generated columns are first-class.">
+<meta property="og:title" content="remus — your Postgres schema, as text">
+<meta property="og:description" content="Introspect a live PostgreSQL database and get JSON, Mermaid, DBML and SQL DDL from one static binary.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <a class="wordmark" href="#top" aria-label="remus home">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16h11M15 16l9-8M15 16l9 8M15 16h13M24 8v0M24 24v0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="16" r="2.6" fill="currentColor"/></svg>
+    remus
+  </a>
+  <nav>
+    <a href="#outputs">Outputs</a>
+    <a href="#fidelity">Fidelity</a>
+    <a href="#how">How it works</a>
+    <a href="https://github.com/lupidae/remus/tree/main/examples#readme">Examples</a>
+    <a class="gh" href="https://github.com/lupidae/remus">GitHub</a>
+  </nav>
+</header>
+
+<main id="top">
+
+<section class="hero">
+  <p class="eyebrow">PostgreSQL · CLI · Rust</p>
+  <h1>Your Postgres schema,<br>as text.</h1>
+  <p class="lede">One static binary. Point it at a database and get <strong>JSON</strong>, <strong>Mermaid</strong>, <strong>DBML</strong> and <strong>SQL&nbsp;DDL</strong>, with enums, domains, partitions, row level security and generated columns kept intact instead of flattened into generic boxes.</p>
+  <div class="install">
+    <code id="install-cmd">cargo install --git https://github.com/lupidae/remus remus</code>
+    <button class="copy" data-copy="#install-cmd" aria-label="Copy install command">Copy</button>
+  </div>
+  <div class="cta">
+    <a class="button primary" href="https://github.com/lupidae/remus">View on GitHub</a>
+    <a class="button" href="#outputs">See the output</a>
+  </div>
+</section>
+
+<section class="terminal-wrap" aria-label="Usage">
+  <div class="terminal">
+    <div class="bar"><span></span><span></span><span></span><em>zsh</em></div>
+<pre><code><span class="c"># one format to stdout (Mermaid by default)</span>
+<span class="p">$</span> remus --url postgres://localhost/app &gt; docs/schema.mmd
+
+<span class="c"># every format at once, from a single introspection</span>
+<span class="p">$</span> remus --url postgres://localhost/app --format all --out-dir docs/schema
+<span class="dim">docs/schema/schema.json  schema.mmd  schema.dbml  schema.sql</span>
+
+<span class="c"># credential-free: remus never sees your connection string</span>
+<span class="p">$</span> remus --print-sql | psql "$DATABASE_URL" -Atf - | remus --input - --format dbml
+
+<span class="c"># conceptual view: junction tables collapse into N:N, no columns</span>
+<span class="p">$</span> remus --url postgres://localhost/app --conceptual --no-attributes</code></pre>
+  </div>
+</section>
+
+<section id="outputs" class="outputs">
+  <div class="section-head">
+    <h2>One schema, four outputs</h2>
+    <p>A small blog schema, run through remus. Everything below is the tool's actual output for the input in the first tab; the diagram is rendered live from the Mermaid text.</p>
+  </div>
+  <div class="demo">
+    <div class="output">
+      <div class="tabs" role="tablist" aria-label="Output format">
+        <button role="tab" aria-selected="false" data-tab="input" class="input-tab">schema.sql <span class="tag">input</span></button>
+        <button role="tab" aria-selected="true" data-tab="mermaid">Mermaid</button>
+        <button role="tab" aria-selected="false" data-tab="dbml">DBML</button>
+        <button role="tab" aria-selected="false" data-tab="sql">SQL DDL</button>
+        <button role="tab" aria-selected="false" data-tab="json">JSON</button>
+      </div>
+
+      <div class="panel" role="tabpanel" data-panel="input" hidden>
+        <div class="pane-head"><span>examples/blog/schema.sql</span><button class="copy" data-copy-src="examples/blog/schema.sql">Copy</button></div>
+        <pre class="code" data-src="examples/blog/schema.sql" data-lang="sql"></pre>
+        <p class="caption">The input: six tables, an enum, a self-referencing foreign key, a pure junction table and a view. Small enough to read, varied enough to show what each format keeps.</p>
+      </div>
+
+      <div class="panel" role="tabpanel" data-panel="mermaid">
+        <div class="pane-head">
+          <div class="seg" role="group" aria-label="Diagram variant">
+            <button aria-pressed="true" data-variant="schema.mmd">physical</button>
+            <button aria-pressed="false" data-variant="schema.conceptual.mmd">--conceptual</button>
+            <button aria-pressed="false" data-variant="schema.views.mmd">--views</button>
+          </div>
+          <div class="seg" role="group" aria-label="View">
+            <button aria-pressed="true" data-view="diagram">diagram</button>
+            <button aria-pressed="false" data-view="source">source</button>
+          </div>
+        </div>
+        <div class="diagram" id="diagram" aria-live="polite"></div>
+        <pre class="code source" id="mermaid-source" data-lang="mermaid" hidden></pre>
+        <p class="caption">Crow's feet are what the catalog proves: <code>users |o--o{ comments</code> because <code>author_id</code> is nullable, <code>users ||--o| profiles</code> because the foreign key is also the primary key. Switch to <code>--conceptual</code> and <code>post_tags</code> becomes a single many-to-many edge.</p>
+      </div>
+
+      <div class="panel" role="tabpanel" data-panel="dbml" hidden>
+        <div class="pane-head"><span>schema.dbml</span><button class="copy" data-copy-src="examples/blog/out/schema.dbml">Copy</button></div>
+        <pre class="code" data-src="examples/blog/out/schema.dbml" data-lang="dbml"></pre>
+        <p class="caption">Paste into dbdiagram.io, DrawSQL or ChartDB. Enums become <code>Enum</code> blocks the editor links to; what DBML cannot express (check constraints, partial indexes, RLS) survives as notes.</p>
+      </div>
+
+      <div class="panel" role="tabpanel" data-panel="sql" hidden>
+        <div class="pane-head"><span>schema.sql</span><button class="copy" data-copy-src="examples/blog/out/schema.sql">Copy</button></div>
+        <pre class="code" data-src="examples/blog/out/schema.sql" data-lang="sql"></pre>
+        <p class="caption">Dependency-ordered DDL that replays into an empty database. Foreign keys come as <code>ALTER TABLE</code> after every table exists; views after what they read. Not <code>pg_dump</code>, and the header says exactly what it leaves out.</p>
+      </div>
+
+      <div class="panel" role="tabpanel" data-panel="json" hidden>
+        <div class="pane-head"><span>schema.json</span><button class="copy" data-copy-src="examples/blog/out/schema.json">Copy</button></div>
+        <pre class="code" data-src="examples/blog/out/schema.json" data-lang="json"></pre>
+        <p class="caption">The model itself, and the only lossless format. Codes are PostgreSQL's own (<code>"kind": "r"</code> is a table, <code>"on_delete": "c"</code> cascade), so a payload produced by running the SQL in psql needs no translation.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="section-head">
+    <h2>Built for Postgres, not for "SQL"</h2>
+    <p>Most diagram tools treat Postgres as generic SQL. remus models what the catalog actually says.</p>
+  </div>
+  <div class="grid">
+    <article>
+      <h3>Native types, first-class</h3>
+      <p>Enums, domains with their base type, composite types, arrays of any of them. Identity and generated columns, partitioned tables as one box with their partitions listed, views with what they read, RLS policies with their roles.</p>
+    </article>
+    <article>
+      <h3>Credential-free by design</h3>
+      <p><code>--print-sql</code> prints the one query remus runs. It reads <code>pg_catalog</code> only, never <code>information_schema</code>, never a row of your data. Run it yourself in psql and pipe the JSON back with <code>--input -</code>.</p>
+    </article>
+    <article>
+      <h3>Honest cardinality</h3>
+      <p>Only what the catalog can prove. Nullability decides whether a child must have a parent; uniqueness decides whether a parent has at most one child. Nothing is guessed.</p>
+    </article>
+    <article>
+      <h3>Conceptual mode</h3>
+      <p><code>--conceptual</code> recognises pure association tables, exactly two foreign keys and nothing of their own, and draws one N:N edge in their place. The step from a physical schema toward an actual data model, and the only heuristic in the tool.</p>
+    </article>
+    <article>
+      <h3>Unix-shaped</h3>
+      <p>Reads a URL or stdin, writes stdout or files, exits non-zero with a cause chain when something is wrong. Drop it in CI and diff <code>schema.sql</code> in every pull request.</p>
+    </article>
+    <article>
+      <h3>One query, one model</h3>
+      <p>Every format is a pure function of the same JSON. Introspect once, render four times. The query pins its own <code>search_path</code>, so two people get byte-identical output from the same database.</p>
+    </article>
+  </div>
+</section>
+
+<section id="fidelity" class="fidelity">
+  <div class="section-head">
+    <h2>What each format keeps</h2>
+    <p>JSON is authoritative. SQL covers everything the model carries. The diagram formats are lossy by nature, and this table is the contract.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Feature</th><th>JSON</th><th>SQL</th><th>DBML</th><th>Mermaid</th></tr></thead>
+      <tbody>
+        <tr><td>Tables, columns, keys</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+        <tr><td>Cardinality</td><td class="y">✓</td><td class="n">n/a</td><td class="y">✓</td><td class="y">✓</td></tr>
+        <tr><td>FK actions, deferrable</td><td class="y">✓</td><td class="y">✓</td><td class="p">delete / update</td><td class="n">✗</td></tr>
+        <tr><td>Check &amp; exclusion constraints</td><td class="y">✓</td><td class="y">✓</td><td class="p">note</td><td class="n">✗</td></tr>
+        <tr><td>Enums</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓ Enum block</td><td class="p">name + note</td></tr>
+        <tr><td>Domains, composite types</td><td class="y">✓</td><td class="y">✓</td><td class="p">name + note</td><td class="p">name + note</td></tr>
+        <tr><td>Identity, serial</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓ increment</td><td class="p">note</td></tr>
+        <tr><td>Generated columns, defaults</td><td class="y">✓</td><td class="y">✓</td><td class="p">note / ✓</td><td class="n">✗</td></tr>
+        <tr><td>Indexes, partial predicates</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓ / note</td><td class="n">✗</td></tr>
+        <tr><td>Partitioning</td><td class="y">✓</td><td class="y">✓</td><td class="p">parent, key in note</td><td class="p">parent only</td></tr>
+        <tr><td>Views, materialized views</td><td class="y">✓</td><td class="y">✓</td><td class="n">✗</td><td class="p">opt-in, as edges</td></tr>
+        <tr><td>Row level security</td><td class="y">✓</td><td class="y">✓</td><td class="p">note</td><td class="n">✗</td></tr>
+        <tr><td>Comments</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="p">columns only</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="how" class="how">
+  <div class="section-head">
+    <h2>How it works</h2>
+  </div>
+  <ol class="steps">
+    <li>
+      <span class="num">1</span>
+      <h3>One query</h3>
+      <p>A single statement against <code>pg_catalog</code> returns the whole schema as one JSON document. It is embedded in the binary and printed verbatim by <code>--print-sql</code>, so you can read it, audit it, or run it without remus at all.</p>
+    </li>
+    <li>
+      <span class="num">2</span>
+      <h3>One model</h3>
+      <p>That JSON <em>is</em> the model. Tables, columns, constraints, indexes, policies, enums, domains, composites, partitions, extensions, in the catalog's own vocabulary. Nothing physical that would differ between two restores of the same schema.</p>
+    </li>
+    <li>
+      <span class="num">3</span>
+      <h3>Pure emitters</h3>
+      <p>Mermaid, DBML and SQL are rendered from the model with no I/O and no database in sight. That is what makes the outputs reproducible, golden-file tested, and identical whether they come from the CLI or, later, a browser.</p>
+    </li>
+  </ol>
+  <div class="terminal small">
+    <div class="bar"><span></span><span></span><span></span><em>credential-free</em></div>
+<pre><code><span class="p">$</span> remus --print-sql &gt; introspect.sql          <span class="c"># read it; it is 280 lines of pg_catalog</span>
+<span class="p">$</span> psql "$DATABASE_URL" -Atf introspect.sql &gt; schema.json
+<span class="p">$</span> remus --input schema.json --format all --out-dir docs/schema</code></pre>
+  </div>
+</section>
+
+<section class="fit">
+  <div class="section-head">
+    <h2>Where it fits</h2>
+  </div>
+  <p>pgAdmin generates an ERD from a live database. pgModeler is a mature, Postgres-native desktop modeller with reverse engineering, diff and sync. Both are better places to <em>draw</em>. remus is the Unix-shaped complement: text out, pipes in, runs in CI, and produces the formats those editors, GitHub and Miro already consume.</p>
+</section>
+
+</main>
+
+<footer>
+  <div>
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16h11M15 16l9-8M15 16l9 8M15 16h13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="16" r="2.6" fill="currentColor"/></svg>
+    remus · MIT or Apache-2.0 · made by <a href="https://github.com/lupidae">lupidae</a>
+  </div>
+  <div class="links">
+    <a href="https://github.com/lupidae/remus">Source</a>
+    <a href="https://github.com/lupidae/remus/tree/main/examples#readme">Examples</a>
+    <a href="https://github.com/lupidae/remus/issues">Issues</a>
+  </div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

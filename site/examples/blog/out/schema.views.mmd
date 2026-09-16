@@ -1,0 +1,53 @@
+erDiagram
+    comments {
+        bigint id PK "identity"
+        bigint post_id FK
+        bigint author_id FK "nullable"
+        bigint parent_id FK "nullable"
+        text body
+        timestamp_with_time_zone posted_at
+    }
+    post_tags {
+        bigint post_id PK,FK
+        integer tag_id PK,FK
+    }
+    posts {
+        bigint id PK "identity"
+        bigint author_id FK
+        text title
+        text slug UK "URL fragment, unique per site"
+        text body
+        post_status status "enum"
+        timestamp_with_time_zone published_at "nullable"
+    }
+    profiles {
+        bigint user_id PK,FK
+        text bio "nullable"
+        text website "nullable"
+    }
+    published_posts {
+        bigint id "nullable"
+        text title "nullable"
+        text slug "nullable"
+        text author "nullable"
+        timestamp_with_time_zone published_at "nullable"
+    }
+    tags {
+        integer id PK "identity"
+        text name UK
+    }
+    users {
+        bigint id PK "identity"
+        text email UK
+        text name
+        timestamp_with_time_zone created_at
+    }
+    users |o--o{ comments : "author_id"
+    comments |o--o{ comments : "parent_id"
+    posts ||--o{ comments : "post_id"
+    posts ||--o{ post_tags : "post_id"
+    tags ||--o{ post_tags : "tag_id"
+    users ||--o{ posts : "author_id"
+    users ||--o| profiles : "user_id"
+    posts ||..|| published_posts : "reads"
+    users ||..|| published_posts : "reads"
