@@ -1,9 +1,11 @@
 # remus
 
 Postgres schema export CLI: one introspection query → JSON model → Mermaid,
-DBML, SQL DDL. Two crates: `remus-core` (model + emitters, no I/O) and `remus`
-(clap CLI, tokio-postgres). Read the code for structure; this file holds what the
-code cannot tell you.
+DBML, SQL DDL. Crates: `remus-core` (model, the introspection query, the
+`Emitter` trait, JSON; no I/O), one crate per emitter (`remus-mermaid`,
+`remus-dbml`, `remus-sql`), and `remus` (clap CLI, tokio-postgres, and the
+format registry that is the only place naming every emitter). Read the code for
+structure; this file holds what the code cannot tell you.
 
 ## Prior art, so we don't rebuild it
 
@@ -58,6 +60,13 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   the same schema belongs in the model (that is why `attnum` is not carried).
 - **`remus-core` has no I/O and no async.** It must stay compilable to wasm
   later. No `tokio`, no `std::fs` in core.
+- **One crate per emitter.** Each depends on `remus-core` and never on another
+  emitter, so the compiler — not a convention — keeps formats from reaching into
+  each other, and a wasm build can link one format alone. The dispatch table
+  cannot live in core (that would be a cycle); it is `crates/remus/src/format.rs`,
+  next to the clap enum. Each crate exposes an honest free `render` (infallible,
+  and without `DiagramOptions` where they mean nothing) plus a unit-type
+  `Emitter` impl for the CLI.
 
 ## Not in scope right now
 
@@ -88,8 +97,11 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   do?", rewrite the code instead.
 - Tests inline in `#[cfg(test)] mod tests`, named as assertions
   (`views_come_after_what_they_read`). Emitter output is golden-file tested
-  against `tests/fixtures/showcase.json`; regenerate the fixture from
-  `showcase.sql` when the query changes, then `just golden` and review.
+  against `crates/remus-core/fixtures/showcase.json` (it lives with the query
+  that produced it, behind the `fixtures` feature); the rendered expectations are
+  `crates/remus/tests/expected/`, because only the CLI crate sees every emitter.
+  Regenerate the fixture from `showcase.sql` when the query changes, then
+  `just golden` and review.
 - `cargo +nightly fmt` (grouped imports), `clippy -D warnings`, no `allow`.
 - Every emitter change: fidelity table in README, golden files, a unit test if
   it touches a rule.

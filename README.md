@@ -104,10 +104,14 @@ just site     # refresh the landing page's copy of the blog example
 just site-deploy  # publish site/ to Cloudflare (wrangler.jsonc)
 ```
 
-Emitter tests are golden files: `crates/remus-core/tests/fixtures/showcase.json`
-is the introspection of `showcase.sql`, a synthetic schema exercising every
-feature above, and `tests/expected/` holds the rendered outputs. No database is
-needed to run the tests.
+Emitter tests are golden files: `crates/remus-core/fixtures/showcase.json` is the
+introspection of `showcase.sql`, a synthetic schema exercising every feature
+above, and `crates/remus/tests/expected/` holds the rendered outputs. No database
+is needed to run the tests.
+
+Each format is its own crate — `remus-mermaid`, `remus-dbml`, `remus-sql` — over
+the model in `remus-core`. They never depend on one another, so a consumer (a
+wasm playground, say) can link a single format.
 
 ## Prior art
 

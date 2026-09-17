@@ -13,6 +13,9 @@ path = "src/main.rs"
 
 [dependencies]
 remus-core.workspace = true
+remus-dbml.workspace = true
+remus-mermaid.workspace = true
+remus-sql.workspace = true
 thiserror.workspace = true
 
 clap = { version = "4.6.7", default-features = false, features = [

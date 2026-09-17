@@ -8,11 +8,34 @@
 
 use std::{collections::HashSet, fmt::Write};
 
-use super::DiagramOptions;
-use crate::{
-    Schema,
+use remus_core::{
+    Error, Schema,
+    emit::{DiagramOptions, Emitter},
     model::{Column, Constraint, Entity, RelationRef, TypeKind},
 };
+
+/// Dispatch handle for this format. Rendering itself is the free function
+/// below; the unit type exists so the CLI can hold every format as one
+/// `dyn Emitter` without knowing which crates are linked in.
+pub struct Mermaid;
+
+impl Emitter for Mermaid {
+    fn name(&self) -> &'static str {
+        "mermaid"
+    }
+
+    fn extension(&self) -> &'static str {
+        "mmd"
+    }
+
+    fn is_diagram(&self) -> bool {
+        true
+    }
+
+    fn render(&self, schema: &Schema, options: &DiagramOptions) -> Result<String, Error> {
+        Ok(self::render(schema, options))
+    }
+}
 
 pub fn render(schema: &Schema, options: &DiagramOptions) -> String {
     let qualify = schema.is_multi_schema();
@@ -242,10 +265,9 @@ fn escape(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{render, token};
-    use crate::{Schema, emit::DiagramOptions};
+    use remus_core::{Schema, emit::DiagramOptions, fixtures::SHOWCASE};
 
-    const SHOWCASE: &str = include_str!("../../tests/fixtures/showcase.json");
+    use super::{render, token};
 
     #[test]
     fn tokens_are_mermaid_safe() {

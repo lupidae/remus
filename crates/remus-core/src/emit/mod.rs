@@ -1,55 +1,36 @@
-//! Output formats. Every emitter is a pure function of the [`Schema`].
+//! What an output format is, and the one format that is the model itself.
 //!
-//! JSON is the model itself and therefore lossless. SQL covers every object the
-//! model carries. Mermaid and DBML are diagram formats and drop what they cannot
-//! express; the README's fidelity table is the contract for what each keeps.
+//! JSON lives here because it is the model's own serialisation and therefore
+//! lossless. Every other format is its own crate (`remus-mermaid`, `remus-dbml`,
+//! `remus-sql`), each depending on this one and never on another emitter, so the
+//! compiler enforces that no format can reach into another's rendering. The
+//! README's fidelity table is the contract for what each keeps.
 
-pub mod dbml;
-mod ident;
-pub mod mermaid;
-pub mod sql;
-
-use std::fmt;
+pub mod ident;
 
 use crate::{Error, Schema};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Format {
-    Json,
-    Mermaid,
-    Dbml,
-    Sql,
-}
+/// One output format.
+///
+/// Implementors are unit types: the rendering lives in each emitter crate's free
+/// `render` function, with the honest signature for that format (infallible, and
+/// without [`DiagramOptions`] where they mean nothing). This trait exists only so
+/// the CLI can hold every linked format as one `dyn Emitter`.
+pub trait Emitter {
+    /// The name the CLI exposes, e.g. `mermaid`.
+    fn name(&self) -> &'static str;
 
-impl Format {
-    pub const ALL: [Format; 4] = [Format::Json, Format::Mermaid, Format::Dbml, Format::Sql];
-
-    pub fn extension(&self) -> &'static str {
-        match self {
-            Format::Json => "json",
-            Format::Mermaid => "mmd",
-            Format::Dbml => "dbml",
-            Format::Sql => "sql",
-        }
-    }
+    /// File extension, without the dot.
+    fn extension(&self) -> &'static str;
 
     /// Diagram formats honour [`DiagramOptions`]. JSON and SQL are exhaustive by
-    /// construction: collapsing a junction table or hiding a view would make them lie.
-    pub fn is_diagram(&self) -> bool {
-        matches!(self, Format::Mermaid | Format::Dbml)
+    /// construction: collapsing a junction table or hiding a view would make
+    /// them lie.
+    fn is_diagram(&self) -> bool {
+        false
     }
-}
 
-impl fmt::Display for Format {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let name = match self {
-            Format::Json => "json",
-            Format::Mermaid => "mermaid",
-            Format::Dbml => "dbml",
-            Format::Sql => "sql",
-        };
-        f.write_str(name)
-    }
+    fn render(&self, schema: &Schema, options: &DiagramOptions) -> Result<String, Error>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -72,12 +53,19 @@ impl Default for DiagramOptions {
     }
 }
 
-pub fn render(schema: &Schema, format: &Format, options: &DiagramOptions) -> Result<String, Error> {
-    match format {
-        Format::Json => json(schema),
-        Format::Mermaid => Ok(mermaid::render(schema, options)),
-        Format::Dbml => Ok(dbml::render(schema, options)),
-        Format::Sql => Ok(sql::render(schema)),
+pub struct Json;
+
+impl Emitter for Json {
+    fn name(&self) -> &'static str {
+        "json"
+    }
+
+    fn extension(&self) -> &'static str {
+        "json"
+    }
+
+    fn render(&self, schema: &Schema, _options: &DiagramOptions) -> Result<String, Error> {
+        json(schema)
     }
 }
 

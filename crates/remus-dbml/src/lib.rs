@@ -8,13 +8,36 @@
 
 use std::{collections::HashSet, fmt::Write};
 
-use super::DiagramOptions;
-use crate::{
-    Schema,
+use remus_core::{
+    Error, Schema,
+    emit::{DiagramOptions, Emitter},
     model::{
         Column, Constraint, ConstraintKind, Entity, Index, ReferentialAction, RelationRef, TypeKind,
     },
 };
+
+/// Dispatch handle for this format. Rendering itself is the free function
+/// below; the unit type exists so the CLI can hold every format as one
+/// `dyn Emitter` without knowing which crates are linked in.
+pub struct Dbml;
+
+impl Emitter for Dbml {
+    fn name(&self) -> &'static str {
+        "dbml"
+    }
+
+    fn extension(&self) -> &'static str {
+        "dbml"
+    }
+
+    fn is_diagram(&self) -> bool {
+        true
+    }
+
+    fn render(&self, schema: &Schema, options: &DiagramOptions) -> Result<String, Error> {
+        Ok(self::render(schema, options))
+    }
+}
 
 pub fn render(schema: &Schema, options: &DiagramOptions) -> String {
     let collapsed: HashSet<RelationRef> = if options.conceptual {
@@ -513,10 +536,9 @@ fn note(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{ParsedIndex, default_value, render};
-    use crate::{Schema, emit::DiagramOptions};
+    use remus_core::{Schema, emit::DiagramOptions, fixtures::SHOWCASE};
 
-    const SHOWCASE: &str = include_str!("../../tests/fixtures/showcase.json");
+    use super::{ParsedIndex, default_value, render};
 
     #[test]
     fn defaults_take_dbml_shapes() {

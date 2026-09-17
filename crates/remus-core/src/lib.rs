@@ -8,6 +8,8 @@
 
 pub mod emit;
 mod error;
+#[cfg(feature = "fixtures")]
+pub mod fixtures;
 pub mod model;
 
 pub use error::Error;
