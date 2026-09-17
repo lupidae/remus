@@ -7,26 +7,25 @@
 
 use std::{fs, path::Path};
 
-use remus_core::{
-    Schema,
-    emit::{self, DiagramOptions, Format},
-};
+use remus::format::Format;
+use remus_core::{Schema, emit::DiagramOptions};
 
 /// (file suffix, format, options). Diagram variants only exist for diagram formats.
 fn variants() -> Vec<(String, Format, DiagramOptions)> {
     let mut variants = Vec::new();
     for format in Format::ALL {
+        let emitter = format.emitter();
         let default = DiagramOptions::default();
         variants.push((
-            format.extension().to_owned(),
+            emitter.extension().to_owned(),
             format.clone(),
             default.clone(),
         ));
-        if !format.is_diagram() {
+        if !emitter.is_diagram() {
             continue;
         }
         variants.push((
-            format!("conceptual.{}", format.extension()),
+            format!("conceptual.{}", emitter.extension()),
             format.clone(),
             DiagramOptions {
                 conceptual: true,
@@ -34,7 +33,7 @@ fn variants() -> Vec<(String, Format, DiagramOptions)> {
             },
         ));
         variants.push((
-            format!("views.{}", format.extension()),
+            format!("views.{}", emitter.extension()),
             format.clone(),
             DiagramOptions {
                 views: true,
@@ -42,7 +41,7 @@ fn variants() -> Vec<(String, Format, DiagramOptions)> {
             },
         ));
         variants.push((
-            format!("boxes.{}", format.extension()),
+            format!("boxes.{}", emitter.extension()),
             format,
             DiagramOptions {
                 attributes: false,
@@ -55,11 +54,15 @@ fn variants() -> Vec<(String, Format, DiagramOptions)> {
 
 #[test]
 fn every_fixture_matches_its_expected_output() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    // The fixtures live with the query that produced them, in remus-core; only
+    // the rendered expectations belong to this crate.
+    let fixtures = root.join("../remus-core/fixtures");
+    let expected_dir = root.join("tests/expected");
     let update = std::env::var_os("UPDATE_GOLDEN").is_some();
     let mut failures = Vec::new();
 
-    let mut fixtures: Vec<_> = fs::read_dir(root.join("fixtures"))
+    let mut fixtures: Vec<_> = fs::read_dir(&fixtures)
         .unwrap()
         .map(|entry| entry.unwrap().path())
         .filter(|path| path.extension().is_some_and(|ext| ext == "json"))
@@ -72,8 +75,8 @@ fn every_fixture_matches_its_expected_output() {
         let schema = Schema::from_json(&fs::read_to_string(&fixture).unwrap())
             .unwrap_or_else(|err| panic!("{stem}: {err}"));
         for (suffix, format, options) in variants() {
-            let actual = emit::render(&schema, &format, &options).unwrap();
-            let expected_path = root.join("expected").join(format!("{stem}.{suffix}"));
+            let actual = format.emitter().render(&schema, &options).unwrap();
+            let expected_path = expected_dir.join(format!("{stem}.{suffix}"));
             if update {
                 fs::write(&expected_path, &actual).unwrap();
                 continue;

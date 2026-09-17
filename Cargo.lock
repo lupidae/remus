@@ -592,6 +592,9 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "remus-core",
+ "remus-dbml",
+ "remus-mermaid",
+ "remus-sql",
  "rustls",
  "thiserror",
  "tokio",
@@ -607,6 +610,27 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "remus-dbml"
+version = "0.1.0"
+dependencies = [
+ "remus-core",
+]
+
+[[package]]
+name = "remus-mermaid"
+version = "0.1.0"
+dependencies = [
+ "remus-core",
+]
+
+[[package]]
+name = "remus-sql"
+version = "0.1.0"
+dependencies = [
+ "remus-core",
 ]
 
 [[package]]

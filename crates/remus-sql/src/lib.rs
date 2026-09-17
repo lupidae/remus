@@ -15,13 +15,35 @@ use std::{
     fmt::Write,
 };
 
-use super::ident::{qualified, quote_ident, quote_literal};
-use crate::{
-    Schema,
+use remus_core::{
+    Error, Schema,
+    emit::{
+        DiagramOptions, Emitter,
+        ident::{qualified, quote_ident, quote_literal},
+    },
     model::{
         Column, ConstraintKind, Entity, EntityKind, Generated, Identity, PolicyCommand, RelationRef,
     },
 };
+
+/// Dispatch handle for this format. Rendering itself is the free function
+/// below; the unit type exists so the CLI can hold every format as one
+/// `dyn Emitter` without knowing which crates are linked in.
+pub struct Sql;
+
+impl Emitter for Sql {
+    fn name(&self) -> &'static str {
+        "sql"
+    }
+
+    fn extension(&self) -> &'static str {
+        "sql"
+    }
+
+    fn render(&self, schema: &Schema, _options: &DiagramOptions) -> Result<String, Error> {
+        Ok(self::render(schema))
+    }
+}
 
 pub fn render(schema: &Schema) -> String {
     let mut out = String::new();
@@ -477,10 +499,9 @@ fn write_comments(out: &mut String, schema: &Schema) {
 
 #[cfg(test)]
 mod tests {
-    use super::{owned_sequence, render};
-    use crate::Schema;
+    use remus_core::{Schema, fixtures::SHOWCASE};
 
-    const SHOWCASE: &str = include_str!("../../tests/fixtures/showcase.json");
+    use super::{owned_sequence, render};
 
     fn showcase() -> Schema {
         Schema::from_json(SHOWCASE).unwrap()

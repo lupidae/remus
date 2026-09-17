@@ -13,13 +13,13 @@ check: fmt
 
 # regenerate the golden files after an intentional emitter change, then review the diff
 golden:
-    UPDATE_GOLDEN=1 cargo test -p remus-core --test golden
+    UPDATE_GOLDEN=1 cargo test -p remus --test golden
 
 # run the CLI against DATABASE_URL and write every format under ./out
 demo *ARGS:
     cargo run -q -p remus -- --format all --out-dir out {{ARGS}}
 
-# rebuild tests/fixtures/showcase.json from showcase.sql in a scratch database on a
+# rebuild crates/remus-core/fixtures/showcase.json from showcase.sql in a scratch database on a
 # local Postgres (PGURL: superuser connection to the `postgres` database). template0
 # keeps extensions installed in the server's template1 out of the fixture; the
 # timestamp is dropped so a regenerated fixture only differs when the schema does.
@@ -29,9 +29,9 @@ fixture PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres":
     admin="{{PGURL}}"
     scratch="{{trim_end_match(PGURL, "/postgres")}}/remus_showcase"
     psql "$admin" -v ON_ERROR_STOP=1 -qc "DROP DATABASE IF EXISTS remus_showcase WITH (FORCE)" -c "CREATE DATABASE remus_showcase TEMPLATE template0"
-    psql "$scratch" -v ON_ERROR_STOP=1 -q -f crates/remus-core/tests/fixtures/showcase.sql
+    psql "$scratch" -v ON_ERROR_STOP=1 -q -f crates/remus-core/fixtures/showcase.sql
     psql "$scratch" -Atf crates/remus-core/queries/introspect.sql \
-        | python3 -c 'import sys, json; d = json.load(sys.stdin); d.pop("generated_at"); json.dump(d, open("crates/remus-core/tests/fixtures/showcase.json", "w"), indent=2)'
+        | python3 -c 'import sys, json; d = json.load(sys.stdin); d.pop("generated_at"); json.dump(d, open("crates/remus-core/fixtures/showcase.json", "w"), indent=2)'
     psql "$admin" -qc "DROP DATABASE remus_showcase WITH (FORCE)"
     just golden
 

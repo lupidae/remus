@@ -5,12 +5,9 @@ use std::{
 };
 
 use clap::{Parser, ValueEnum};
-use remus_core::{
-    INTROSPECT_SQL, Schema,
-    emit::{self, DiagramOptions, Format},
-};
+use remus_core::{INTROSPECT_SQL, Schema, emit::DiagramOptions};
 
-use crate::{Error, introspect};
+use crate::{Error, format::Format, introspect};
 
 #[derive(Debug, Parser)]
 #[command(name = "remus", version)]
@@ -136,7 +133,7 @@ impl Destination {
         }
     }
 
-    fn write(&self, format: &Format, rendered: &str) -> Result<(), Error> {
+    fn write(&self, extension: &str, rendered: &str) -> Result<(), Error> {
         match self {
             Self::Stdout => {
                 let mut stdout = io::stdout().lock();
@@ -154,10 +151,7 @@ impl Destination {
                     path: dir.clone(),
                     source,
                 })?;
-                write_file(
-                    &dir.join(format!("schema.{}", format.extension())),
-                    rendered,
-                )
+                write_file(&dir.join(format!("schema.{extension}")), rendered)
             }
         }
     }
@@ -188,9 +182,9 @@ pub async fn run() -> Result<(), Error> {
     }
 
     let options = cli.diagram_options();
-    for format in &formats {
-        let rendered = emit::render(&schema, format, &options)?;
-        destination.write(format, &rendered)?;
+    for emitter in formats.iter().map(Format::emitter) {
+        let rendered = emitter.render(&schema, &options)?;
+        destination.write(emitter.extension(), &rendered)?;
     }
     Ok(())
 }
@@ -224,9 +218,9 @@ fn read_input(path: &Path) -> Result<String, Error> {
 #[cfg(test)]
 mod tests {
     use clap::Parser;
-    use remus_core::emit::Format;
 
     use super::{Cli, Destination};
+    use crate::format::Format;
 
     fn parse(args: &[&str]) -> Cli {
         Cli::try_parse_from(std::iter::once("remus").chain(args.iter().copied())).unwrap()

@@ -3,6 +3,7 @@
 
 pub mod cli;
 mod error;
+pub mod format;
 mod introspect;
 
 pub use error::Error;
