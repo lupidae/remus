@@ -4,6 +4,7 @@
 pub mod cli;
 mod error;
 pub mod format;
+mod guide;
 mod introspect;
 
 pub use error::Error;

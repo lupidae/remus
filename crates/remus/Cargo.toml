@@ -36,3 +36,5 @@ tokio-postgres = { version = "0.7.18", default-features = false, features = ["ru
 tokio-postgres-rustls = "0.14.0"
 rustls = { version = "0.23.45", default-features = false, features = ["ring", "std", "tls12"] }
 webpki-roots = "1.0.9"
+inquire = { version = "0.9.4", default-features = false, features = ["crossterm", "macros"] }
+owo-colors = { version = "4.4.0", default-features = false }
