@@ -34,8 +34,9 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   unambiguous. Keep `FROM cfg` at the end; without it the CTE may never run.
 - **pg_catalog only, never information_schema, never row data.** A reader must
   be able to verify that by reading the SQL.
-- **JSON is authoritative, every other format is lossy**, and the README's
-  fidelity table is the contract. Update it with every emitter change.
+- **JSON is authoritative, every other format is lossy**, and the fidelity table
+  in `site/index.html` is the contract. Update it with every emitter change. The
+  README stays short and links to it; long-form documentation lives on the site.
 - **Emitters are one-directional.** No DBML parser, no SQL parser, no importer:
   anything read back would be a poorer model than the catalog gives.
 - **Four formats, no more** unless someone asks. Graphviz DOT and a Markdown
@@ -103,7 +104,7 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   Regenerate the fixture from `showcase.sql` when the query changes, then
   `just golden` and review.
 - `cargo +nightly fmt` (grouped imports), `clippy -D warnings`, no `allow`.
-- Every emitter change: fidelity table in README, golden files, a unit test if
+- Every emitter change: fidelity table on the site, golden files, a unit test if
   it touches a rule.
 
 ## Verify
