@@ -6,7 +6,7 @@
 
 <p align="center">
   Mermaid · DBML · SQL DDL · JSON, from one static binary.<br>
-  <a href="https://remus.lefortlucas1.workers.dev"><b>remus.lefortlucas1.workers.dev</b></a>
+  <a href="https://remus.lupidae.com"><b>remus.lupidae.com</b></a>
 </p>
 
 ---
@@ -77,10 +77,10 @@ data. Read it before you run it.
 Enums, domains, composite types, partitioned tables, row level security, identity and
 generated columns, views and what they read: they survive as themselves instead of
 being flattened into generic boxes. JSON loses nothing; the
-[fidelity table](https://remus.lefortlucas1.workers.dev/#fidelity) says what each
+[fidelity table](https://remus.lupidae.com/#fidelity) says what each
 other format keeps.
 
-- **[The website](https://remus.lefortlucas1.workers.dev)** — every output side by
+- **[The website](https://remus.lupidae.com)** — every output side by
   side, rendered, with how it works.
 - **[examples/](examples/README.md)** — two sample schemas, every format committed.
 

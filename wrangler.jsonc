@@ -1,9 +1,18 @@
-// Landing page hosting: Cloudflare Pages, now served as Workers static assets.
-// Deploy with `just site-deploy`. No Worker code; only the files under site/.
+// Landing page hosting: Cloudflare Workers static assets. No Worker code; only
+// the files under site/. Deploy with `just site-deploy`.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "remus",
   "compatibility_date": "2026-09-15",
+  // Pinned because the login reaches two accounts: the zone for the custom
+  // domain below lives in Lupidae, and a Custom Domain only attaches to a zone
+  // in the worker's own account.
+  "account_id": "cd7f1b85f36fadad5c5f061f11f1c65e",
+  "routes": [
+    { "pattern": "remus.lupidae.com", "custom_domain": true }
+  ],
+  // One canonical URL. wrangler creates the DNS record and certificate itself.
+  "workers_dev": false,
   "assets": {
     "directory": "./site",
     "not_found_handling": "404-page",
