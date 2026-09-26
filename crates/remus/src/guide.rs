@@ -58,6 +58,9 @@ fn banner() {
     eprintln!();
 }
 
+/// Erase the "connecting…" line before the verdict replaces it.
+const CLEAR: &str = "\x1b[2K";
+
 /// Keeps asking until something answers: a typo in a URL is the one mistake
 /// every first run makes, and re-running the whole command to fix it is what
 /// this flow exists to avoid.
@@ -83,7 +86,7 @@ async fn load(cli: &Cli) -> Result<(String, Schema), Error> {
                     path: PathBuf::from(&answer),
                     source,
                 })
-                .and_then(|json| Ok(Schema::from_json(&json)?))
+                .and_then(|json| Schema::from_json(&json).map_err(Error::from))
         };
 
         match found {
@@ -110,9 +113,6 @@ async fn load(cli: &Cli) -> Result<(String, Schema), Error> {
         }
     }
 }
-
-/// Erase the "connecting…" line before the verdict replaces it.
-const CLEAR: &str = "\x1b[2K";
 
 fn census(schema: &Schema) -> String {
     let tables = schema.entities.iter().filter(|e| e.kind.is_table()).count();
