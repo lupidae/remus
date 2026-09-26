@@ -119,7 +119,16 @@
             <button aria-pressed="false" data-view="source">source</button>
           </div>
         </div>
-        <div class="diagram" id="diagram" aria-live="polite"></div>
+        <div class="diagram" id="diagram" tabindex="0" role="group" aria-label="Schema diagram. Drag to pan, control or command and scroll to zoom, arrow keys to move.">
+          <div class="stage" id="stage"></div>
+          <p class="hint">drag to pan · ⌘/ctrl + scroll to zoom · double-click to zoom in</p>
+          <div class="zoom" role="group" aria-label="Zoom">
+            <button type="button" data-zoom="out" aria-label="Zoom out">&minus;</button>
+            <output id="zoom-level">100%</output>
+            <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+            <button type="button" data-zoom="fit">Fit</button>
+          </div>
+        </div>
         <pre class="code source" id="mermaid-source" data-lang="mermaid" hidden></pre>
         <p class="caption">Crow's feet are what the catalog proves: <code>users |o--o{ comments</code> because <code>author_id</code> is nullable, <code>users ||--o| profiles</code> because the foreign key is also the primary key. Switch to <code>--conceptual</code> and <code>post_tags</code> becomes a single many-to-many edge.</p>
       </div>

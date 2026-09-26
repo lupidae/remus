@@ -65,20 +65,205 @@ for (const tab of tabs) {
   });
 }
 
-// --- mermaid: variant + diagram/source toggle ------------------------------
+// --- mermaid: a canvas you navigate -----------------------------------------
 const diagram = document.getElementById("diagram");
+const stage = document.getElementById("stage");
 const source = document.getElementById("mermaid-source");
+const readout = document.getElementById("zoom-level");
+
+const MIN = 0.15;
+const MAX = 6;
+const clamp = (n, lo, hi) => Math.min(Math.max(n, lo), hi);
+
+let scale = 1;
+let x = 0;
+let y = 0;
+// A fit is only automatic until the reader takes over; after that, moving the
+// diagram out from under them on a resize would be rude.
+let steered = false;
+let needsFit = false;
+
+function apply() {
+  stage.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+  readout.textContent = `${Math.round(scale * 100)}%`;
+}
+
+/// Zoom about a point, in coordinates relative to the viewport's top left, so
+/// whatever is under the cursor stays under it.
+function zoomAt(px, py, factor) {
+  const next = clamp(scale * factor, MIN, MAX);
+  const ratio = next / scale;
+  x = px - (px - x) * ratio;
+  y = py - (py - y) * ratio;
+  scale = next;
+  apply();
+}
+
+function fit() {
+  const svg = stage.querySelector("svg");
+  const box = diagram.getBoundingClientRect();
+  // Hidden behind the source view: nothing to measure, so fit on the way back.
+  if (!svg || box.width === 0) {
+    needsFit = true;
+    return;
+  }
+  scale = 1;
+  x = 0;
+  y = 0;
+  apply();
+  const drawn = svg.getBoundingClientRect();
+  if (!drawn.width || !drawn.height) return;
+  const margin = 28;
+  // Never magnify past 100%: a small schema centred is better than a blurry one.
+  scale = clamp(
+    Math.min((box.width - margin * 2) / drawn.width, (box.height - margin * 2) / drawn.height, 1),
+    MIN,
+    MAX,
+  );
+  x = (box.width - drawn.width * scale) / 2;
+  y = (box.height - drawn.height * scale) / 2;
+  needsFit = false;
+  apply();
+}
+
+function steer() {
+  steered = true;
+  diagram.classList.add("touched");
+}
+
+// --- pointer gestures: drag to pan, two fingers to pan and pinch -------------
+const pointers = new Map();
+let previous = null;
+
+function gesture() {
+  const points = [...pointers.values()];
+  const midX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+  const midY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+  const spread = points.length > 1 ? Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) : 0;
+  return { midX, midY, spread, count: points.length };
+}
+
+diagram.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (event.target.closest(".zoom")) return;
+  diagram.setPointerCapture(event.pointerId);
+  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  previous = null;
+  diagram.classList.add("grabbing");
+});
+
+diagram.addEventListener("pointermove", (event) => {
+  if (!pointers.has(event.pointerId)) return;
+  pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  const now = gesture();
+  // A changed finger count re-baselines instead of jumping.
+  if (previous && previous.count === now.count) {
+    x += now.midX - previous.midX;
+    y += now.midY - previous.midY;
+    if (now.count > 1 && previous.spread > 0) {
+      const box = diagram.getBoundingClientRect();
+      zoomAt(now.midX - box.left, now.midY - box.top, now.spread / previous.spread);
+    } else {
+      apply();
+    }
+    steer();
+  }
+  previous = now;
+});
+
+// No pointerleave: the pointer is captured, so a drag that wanders outside the
+// canvas still ends on pointerup, and leaving mid-drag must not drop it.
+for (const type of ["pointerup", "pointercancel"]) {
+  diagram.addEventListener(type, (event) => {
+    pointers.delete(event.pointerId);
+    previous = null;
+    if (pointers.size === 0) diagram.classList.remove("grabbing");
+  });
+}
+
+// Plain wheel is left to the page: a tall canvas that swallowed it would trap
+// the reader. Ctrl or Command is also what a trackpad pinch sends.
+diagram.addEventListener(
+  "wheel",
+  (event) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+    const box = diagram.getBoundingClientRect();
+    zoomAt(event.clientX - box.left, event.clientY - box.top, Math.exp(-event.deltaY * 0.01));
+    steer();
+  },
+  { passive: false },
+);
+
+diagram.addEventListener("dblclick", (event) => {
+  if (event.target.closest(".zoom")) return;
+  const box = diagram.getBoundingClientRect();
+  zoomAt(event.clientX - box.left, event.clientY - box.top, 1.6);
+  steer();
+});
+
+diagram.addEventListener("keydown", (event) => {
+  const step = event.shiftKey ? 120 : 40;
+  const pans = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] };
+  const box = diagram.getBoundingClientRect();
+  if (pans[event.key]) {
+    x += pans[event.key][0];
+    y += pans[event.key][1];
+    apply();
+  } else if (event.key === "+" || event.key === "=") {
+    zoomAt(box.width / 2, box.height / 2, 1.25);
+  } else if (event.key === "-") {
+    zoomAt(box.width / 2, box.height / 2, 0.8);
+  } else if (event.key === "0") {
+    fit();
+    return;
+  } else {
+    return;
+  }
+  event.preventDefault();
+  steer();
+});
+
+for (const button of document.querySelectorAll("[data-zoom]")) {
+  button.addEventListener("click", () => {
+    const box = diagram.getBoundingClientRect();
+    if (button.dataset.zoom === "fit") {
+      steered = false;
+      diagram.classList.add("touched");
+      fit();
+      return;
+    }
+    zoomAt(box.width / 2, box.height / 2, button.dataset.zoom === "in" ? 1.25 : 0.8);
+    steer();
+  });
+}
+
+let resizeTimer;
+addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (!steered) fit();
+  }, 150);
+});
+
+// --- variant + diagram/source toggle ----------------------------------------
 let variant = "schema.mmd";
 let renderId = 0;
 async function renderDiagram() {
   const id = ++renderId;
+  const failure = diagram.querySelector(".error");
+  if (failure) failure.remove();
   try {
     const text = await load(`examples/blog/out/${variant}`);
     source.innerHTML = highlight(text, "mermaid");
     const { svg } = await mermaid.render(`er-${id}`, text);
-    if (id === renderId) diagram.innerHTML = svg;
+    if (id !== renderId) return;
+    stage.innerHTML = svg;
+    steered = false;
+    fit();
   } catch (err) {
-    diagram.innerHTML = `<p class="error">${escape(String(err))}</p>`;
+    stage.innerHTML = "";
+    diagram.insertAdjacentHTML("beforeend", `<p class="error">${escape(String(err))}</p>`);
   }
 }
 for (const button of document.querySelectorAll("[data-variant]")) {
@@ -94,6 +279,7 @@ for (const button of document.querySelectorAll("[data-view]")) {
     const showSource = button.dataset.view === "source";
     source.hidden = !showSource;
     diagram.hidden = showSource;
+    if (!showSource && needsFit) fit();
   });
 }
 dark.addEventListener("change", () => location.reload());
