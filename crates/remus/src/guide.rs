@@ -117,11 +117,18 @@ async fn load(cli: &Cli) -> Result<(String, Schema), Error> {
 fn census(schema: &Schema) -> String {
     let tables = schema.entities.iter().filter(|e| e.kind.is_table()).count();
     let views = schema.entities.iter().filter(|e| e.kind.is_view()).count();
-    let mut census = format!("{} · {} tables", schema.database, tables);
+    let mut census = format!("{} · {}", schema.database, plural(tables, "table"));
     if views > 0 {
-        census.push_str(&format!(", {views} views"));
+        census.push_str(&format!(", {}", plural(views, "view")));
     }
     census
+}
+
+fn plural(count: usize, noun: &str) -> String {
+    match count {
+        1 => format!("1 {noun}"),
+        _ => format!("{count} {noun}s"),
+    }
 }
 
 fn schema_names(schema: &Schema) -> Vec<String> {
@@ -345,7 +352,7 @@ mod tests {
 
     use remus_core::emit::DiagramOptions;
 
-    use super::{bytes, command};
+    use super::{bytes, command, plural};
     use crate::format::Format;
 
     fn replay(schemas: &[&str], available: &[&str], options: DiagramOptions) -> String {
@@ -366,6 +373,13 @@ mod tests {
     fn sizes_read_as_sizes() {
         assert_eq!(bytes(12), "12 B");
         assert_eq!(bytes(2048), "2.0 kB");
+    }
+
+    #[test]
+    fn one_view_is_not_one_views() {
+        assert_eq!(plural(1, "view"), "1 view");
+        assert_eq!(plural(0, "table"), "0 tables");
+        assert_eq!(plural(6, "table"), "6 tables");
     }
 
     #[test]
