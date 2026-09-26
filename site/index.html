@@ -8,15 +8,18 @@
 <meta property="og:title" content="remus — your Postgres schema, as text">
 <meta property="og:description" content="Introspect a live PostgreSQL database and get JSON, Mermaid, DBML and SQL DDL from one static binary.">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://remus.lefortlucas1.workers.dev/logo.png">
+<meta name="twitter:card" content="summary">
 <meta name="color-scheme" content="light dark">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="apple-touch-icon" href="logo.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="nav">
   <a class="wordmark" href="#top" aria-label="remus home">
-    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16h11M15 16l9-8M15 16l9 8M15 16h13M24 8v0M24 24v0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="16" r="2.6" fill="currentColor"/></svg>
+    <img class="mark" src="logo.png" alt="" width="26" height="26">
     remus
   </a>
   <nav>
@@ -31,13 +34,15 @@
 <main id="top">
 
 <section class="hero">
+  <img class="logo" src="logo.png" alt="" width="76" height="76">
   <p class="eyebrow">PostgreSQL · CLI · Rust</p>
   <h1>Your Postgres schema,<br>as text.</h1>
-  <p class="lede">One static binary. Point it at a database and get <strong>JSON</strong>, <strong>Mermaid</strong>, <strong>DBML</strong> and <strong>SQL&nbsp;DDL</strong>, with enums, domains, partitions, row level security and generated columns kept intact instead of flattened into generic boxes.</p>
+  <p class="lede">One static binary. Run <code>remus</code>, answer four questions, and get <strong>Mermaid</strong>, <strong>DBML</strong>, <strong>SQL&nbsp;DDL</strong> and <strong>JSON</strong> — with enums, domains, partitions, row level security and generated columns kept intact instead of flattened into generic boxes.</p>
   <div class="install">
     <code id="install-cmd">cargo install --git https://github.com/lupidae/remus remus</code>
     <button class="copy" data-copy="#install-cmd" aria-label="Copy install command">Copy</button>
   </div>
+  <p class="fineprint">Rust 1.97 or newer. TLS is built in, so hosted Postgres works with no system OpenSSL.</p>
   <div class="cta">
     <a class="button primary" href="https://github.com/lupidae/remus">View on GitHub</a>
     <a class="button" href="#outputs">See the output</a>
@@ -47,18 +52,37 @@
 <section class="terminal-wrap" aria-label="Usage">
   <div class="terminal">
     <div class="bar"><span></span><span></span><span></span><em>zsh</em></div>
-<pre><code><span class="c"># one format to stdout (Mermaid by default)</span>
-<span class="p">$</span> remus --url postgres://localhost/app &gt; docs/schema.mmd
+<pre><code><span class="p">$</span> remus
 
-<span class="c"># every format at once, from a single introspection</span>
-<span class="p">$</span> remus --url postgres://localhost/app --format all --out-dir docs/schema
-<span class="dim">docs/schema/schema.json  schema.mmd  schema.dbml  schema.sql</span>
+  <span class="b">remus</span>  <span class="dim">your Postgres schema, as text</span>
+
+<span class="q">?</span> Database  postgres://localhost/app
+  <span class="ok">✓</span> app · 14 tables, 2 views
+
+<span class="q">?</span> Schemas   public
+<span class="q">?</span> Formats   mermaid, sql, dbml, json
+<span class="q">?</span> Diagram   physical
+<span class="q">?</span> Folder    schema
+
+  <span class="ok">✓</span> schema/schema.mmd    2.1 kB
+  <span class="ok">✓</span> schema/schema.sql    8.4 kB
+  <span class="ok">✓</span> schema/schema.dbml   4.6 kB
+  <span class="ok">✓</span> schema/schema.json  36.0 kB
+
+  <span class="c">next time, in one line:</span>
+  <span class="dim">remus -u "$DATABASE_URL" -f json,mermaid,dbml,sql --out-dir schema</span></code></pre>
+  </div>
+  <div class="terminal small">
+    <div class="bar"><span></span><span></span><span></span><em>no questions asked</em></div>
+<pre><code><span class="c"># one format to stdout</span>
+<span class="p">$</span> remus -u postgres://localhost/app &gt; docs/schema.mmd
+
+<span class="c"># junction tables collapsed into many-to-many, no columns</span>
+<span class="p">$</span> remus -u postgres://localhost/app --conceptual --no-attributes
 
 <span class="c"># credential-free: remus never sees your connection string</span>
-<span class="p">$</span> remus --print-sql | psql "$DATABASE_URL" -Atf - | remus --input - --format dbml
-
-<span class="c"># conceptual view: junction tables collapse into N:N, no columns</span>
-<span class="p">$</span> remus --url postgres://localhost/app --conceptual --no-attributes</code></pre>
+<span class="p">$</span> remus --print-sql | psql "$DATABASE_URL" -Atf - &gt; schema.json
+<span class="p">$</span> remus -i schema.json -f all --out-dir docs/schema</code></pre>
   </div>
 </section>
 
@@ -221,7 +245,7 @@
 
 <footer>
   <div>
-    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16h11M15 16l9-8M15 16l9 8M15 16h13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="16" r="2.6" fill="currentColor"/></svg>
+    <img class="mark" src="logo.png" alt="" width="18" height="18">
     remus · MIT or Apache-2.0 · made by <a href="https://github.com/lupidae">lupidae</a>
   </div>
   <div class="links">

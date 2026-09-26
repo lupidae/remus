@@ -72,14 +72,15 @@ section { max-width: var(--max); margin: 0 auto; padding-block: 72px; }
   padding-block: 22px;
 }
 .wordmark { display: inline-flex; align-items: center; gap: 10px; font-weight: 650; font-size: 1.15rem; text-decoration: none; letter-spacing: -0.01em; }
-.mark { width: 26px; height: 26px; color: var(--accent); }
+.mark { width: 26px; height: 26px; border-radius: 6px; }
 .nav nav { display: flex; gap: 22px; font-size: 0.95rem; }
 .nav nav a { text-decoration: none; color: var(--ink-2); }
 .nav nav a:hover, .nav nav a.gh { color: var(--ink); }
 @media (max-width: 640px) { .nav nav a:not(.gh) { display: none; } }
 
 /* hero */
-.hero { padding-top: 56px; padding-bottom: 40px; }
+.hero { padding-top: 48px; padding-bottom: 40px; }
+.logo { width: 76px; height: 76px; border-radius: 18px; display: block; margin-bottom: 24px; }
 .eyebrow { color: var(--accent); font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 18px; }
 h1 { font-size: clamp(2.6rem, 6.5vw, 4.6rem); font-weight: 700; letter-spacing: -0.035em; }
 .lede { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--ink-2); max-width: 680px; margin: 24px 0 32px; }
@@ -97,6 +98,7 @@ h1 { font-size: clamp(2.6rem, 6.5vw, 4.6rem); font-weight: 700; letter-spacing: 
 }
 .copy:hover { background: rgba(255,255,255,0.14); }
 .copy.done { color: var(--code-s); }
+.fineprint { color: var(--ink-3); font-size: 0.85rem; margin: 14px 0 0; }
 .cta { display: flex; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
 .button {
   display: inline-block; text-decoration: none; font-weight: 600; font-size: 0.95rem;
@@ -118,6 +120,9 @@ h1 { font-size: clamp(2.6rem, 6.5vw, 4.6rem); font-weight: 700; letter-spacing: 
 .terminal .c { color: var(--code-c); }
 .terminal .p { color: var(--accent); }
 .terminal .dim { color: var(--code-c); }
+.terminal .b { font-weight: 700; }
+.terminal .q { color: var(--code-s); }
+.terminal .ok { color: var(--code-s); }
 .terminal.small { margin-top: 36px; }
 
 /* demo */
@@ -186,6 +191,6 @@ footer {
   color: var(--ink-2); font-size: 0.9rem;
 }
 footer > div:first-child { display: inline-flex; align-items: center; gap: 10px; }
-footer .mark { width: 18px; height: 18px; }
+footer .mark { width: 18px; height: 18px; border-radius: 4px; }
 footer .links { display: flex; gap: 18px; }
 footer a { color: var(--ink-2); }
