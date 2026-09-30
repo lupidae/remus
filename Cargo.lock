@@ -687,7 +687,7 @@ dependencies = [
 
 [[package]]
 name = "remus"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "inquire",
@@ -706,7 +706,7 @@ dependencies = [
 
 [[package]]
 name = "remus-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -715,21 +715,21 @@ dependencies = [
 
 [[package]]
 name = "remus-dbml"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "remus-core",
 ]
 
 [[package]]
 name = "remus-mermaid"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "remus-core",
 ]
 
 [[package]]
 name = "remus-sql"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "remus-core",
 ]
