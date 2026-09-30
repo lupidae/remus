@@ -120,6 +120,11 @@ in `remus-core`, and none of them depends on another.
 sync. Both are better places to *draw*. remus is the Unix-shaped complement: text out,
 pipes in, runs in CI.
 
+## Contributing
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) has the setup and the house style;
+[`CLAUDE.md`](CLAUDE.md) has every settled decision and why.
+
 ## Licence
 
 [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option. Unless you

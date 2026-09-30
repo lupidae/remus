@@ -1,0 +1,6 @@
+# The golden files are compared byte for byte and `queries/introspect.sql` is a
+# product surface printed verbatim by --print-sql. Git rewriting line endings on
+# checkout breaks both, on Windows only, where nobody develops.
+* text=auto eol=lf
+
+*.png binary
