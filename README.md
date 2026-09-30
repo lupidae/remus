@@ -13,8 +13,18 @@
 
 ## Try it
 
+Take a binary from the
+[latest release](https://github.com/lupidae/remus/releases/latest) — macOS,
+Linux (static, musl) and Windows, no toolchain needed. Or:
+
 ```bash
-cargo install --git https://github.com/lupidae/remus remus
+cargo install remus                        # any platform with Rust
+docker run --rm ghcr.io/lupidae/remus --help
+```
+
+Then:
+
+```bash
 remus
 ```
 

@@ -6,6 +6,10 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
+homepage.workspace = true
+keywords = ["postgres", "postgresql", "schema", "erd", "introspection"]
+categories = ["database", "development-tools"]
+readme = "../../README.md"
 
 [features]
 # The captured showcase payload, for tests in the emitter crates. Off by

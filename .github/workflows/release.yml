@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to build
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  binaries:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # musl first: the static one is what the README promises.
+          - { target: x86_64-unknown-linux-musl,  os: ubuntu-latest }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-latest }
+          - { target: x86_64-unknown-linux-gnu,   os: ubuntu-latest }
+          - { target: aarch64-apple-darwin,       os: macos-latest }
+          - { target: x86_64-apple-darwin,        os: macos-latest }
+          - { target: x86_64-pc-windows-msvc,     os: windows-latest }
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+      # Cross-compiles where the host cannot, archives, checksums, and attaches
+      # everything to the release for this tag.
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: remus
+          target: ${{ matrix.target }}
+          archive: $bin-$target
+          include: README.md,LICENSE-MIT,LICENSE-APACHE
+          checksum: sha256
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  container:
+    name: ghcr image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

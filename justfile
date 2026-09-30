@@ -59,6 +59,10 @@ site: examples
     cp examples/blog/schema.sql site/examples/blog/
     cp examples/blog/out/schema.{mmd,conceptual.mmd,views.mmd,dbml,sql,json} site/examples/blog/out/
 
+# build the CI container image the release workflow publishes
+image:
+    docker build -t remus:local .
+
 # serve the landing page locally
 site-serve:
     python3 -m http.server 8787 --directory site
