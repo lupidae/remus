@@ -44,6 +44,17 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo clippy -p remus --no-default-features --all-targets -- -D warnings
 
+  package:
+    name: publishable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # Catches a broken manifest, a missing readme or an unpackageable file
+      # here, rather than at the tag, where the version number is already spent.
+      - run: cargo publish --workspace --dry-run --locked
+
   msrv:
     name: msrv (rust-version in Cargo.toml)
     runs-on: ubuntu-latest

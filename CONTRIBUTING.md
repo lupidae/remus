@@ -68,6 +68,17 @@ touched a rule.
 CI runs all of that on Linux, macOS and Windows. `just check` locally is the
 same gate minus the other two platforms.
 
+## Releasing
+
+Tagging `vX.Y.Z` runs everything at once: binaries for six targets, a
+multi-arch image on ghcr, and `cargo publish --workspace`, which uploads the
+crates in dependency order by itself. Nothing needs doing by hand and nothing
+needs doing in sequence.
+
+A crates.io version can be yanked but never deleted or reused, so the publish
+job sits behind a `crates-io` GitHub Environment. Give that environment a
+required reviewer if you want a human in front of it.
+
 ## Licence
 
 By contributing you agree your work is dual licensed under
