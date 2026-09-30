@@ -3,7 +3,7 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/lupidae/remus"
@@ -11,10 +11,10 @@ homepage = "https://remus.lupidae.com"
 rust-version = "1.97"
 
 [workspace.dependencies]
-remus-core = { path = "crates/remus-core", version = "0.1.0" }
-remus-dbml = { path = "crates/remus-dbml", version = "0.1.0" }
-remus-mermaid = { path = "crates/remus-mermaid", version = "0.1.0" }
-remus-sql = { path = "crates/remus-sql", version = "0.1.0" }
+remus-core = { path = "crates/remus-core", version = "0.1.1" }
+remus-dbml = { path = "crates/remus-dbml", version = "0.1.1" }
+remus-mermaid = { path = "crates/remus-mermaid", version = "0.1.1" }
+remus-sql = { path = "crates/remus-sql", version = "0.1.1" }
 
 serde = { version = "1.0.229", default-features = false, features = ["derive", "std"] }
 # preserve_order: emitted JSON keeps the model's field order, so diffs between two
