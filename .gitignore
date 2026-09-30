@@ -10,3 +10,8 @@
 
 # wrangler scratch
 /.wrangler
+
+# release binaries pulled in to build the container image
+/dist/
+/remus-amd64
+/remus-arm64
