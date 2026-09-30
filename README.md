@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="site/logo.png" alt="remus" width="132">
+  <img src="https://raw.githubusercontent.com/lupidae/remus/main/site/logo.png" alt="remus" width="132">
 </p>
 
 <h3 align="center">Your Postgres schema, as text.</h3>
@@ -97,7 +97,7 @@ other format keeps.
 
 - **[The website](https://remus.lupidae.com)** — every output side by
   side, rendered, with how it works.
-- **[examples/](examples/README.md)** — two sample schemas, every format committed.
+- **[examples/](https://github.com/lupidae/remus/blob/main/examples/README.md)** — two sample schemas, every format committed.
 
 ## Development
 
@@ -122,11 +122,11 @@ pipes in, runs in CI.
 
 ## Contributing
 
-[`CONTRIBUTING.md`](CONTRIBUTING.md) has the setup and the house style;
-[`CLAUDE.md`](CLAUDE.md) has every settled decision and why.
+[`CONTRIBUTING.md`](https://github.com/lupidae/remus/blob/main/CONTRIBUTING.md) has the setup and the house style;
+[`CLAUDE.md`](https://github.com/lupidae/remus/blob/main/CLAUDE.md) has every settled decision and why.
 
 ## Licence
 
-[MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option. Unless you
+[MIT](https://github.com/lupidae/remus/blob/main/LICENSE-MIT) or [Apache-2.0](https://github.com/lupidae/remus/blob/main/LICENSE-APACHE), at your option. Unless you
 say otherwise, any contribution you deliberately submit for inclusion shall be
 dual licensed as above, with no additional terms.
