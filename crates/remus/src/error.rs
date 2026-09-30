@@ -4,8 +4,9 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    // Only reachable when no guided run was possible, so it must not suggest one.
     #[error(
-        "no database given: run `remus` on its own to be walked through it, or pass --url\n  \
+        "no database given: pass --url, set DATABASE_URL, or read a payload with --input\n  \
          credential-free: remus --print-sql | psql \"$DATABASE_URL\" -Atf - | remus -i -"
     )]
     NoSource,
@@ -21,8 +22,10 @@ pub enum Error {
     Schema(#[from] remus_core::Error),
     /// Ctrl-C or Esc in the guided flow: the user's own decision, not a failure
     /// to report.
+    #[cfg(feature = "guided")]
     #[error("cancelled")]
     Canceled,
+    #[cfg(feature = "guided")]
     #[error("could not read your answer")]
     Prompt(#[from] inquire::InquireError),
 }

@@ -67,6 +67,11 @@ pub struct Cli {
     /// Diagrams without columns: boxes and lines only.
     #[arg(long)]
     no_attributes: bool,
+
+    /// Never ask: fail instead of opening the guided flow. Implied when CI is
+    /// set in the environment.
+    #[arg(long, visible_alias = "ci")]
+    no_input: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
@@ -116,6 +121,19 @@ impl Cli {
         (!self.format.is_empty()).then(|| self.formats())
     }
 
+    /// Whether a guided run is both possible and wanted.
+    ///
+    /// A terminal is not proof that anyone is watching: a Makefile target, an
+    /// `ssh -t` or a CI runner that allocates a PTY all look interactive and
+    /// would hang on a prompt forever.
+    pub fn interactive(&self) -> bool {
+        // A build without the feature has no prompts to offer.
+        if cfg!(not(feature = "guided")) || self.no_input || in_ci() {
+            return false;
+        }
+        io::stdin().is_terminal() && io::stderr().is_terminal()
+    }
+
     pub fn schemas(&self) -> &[String] {
         &self.schemas
     }
@@ -150,6 +168,16 @@ enum Source {
 
 fn database_url() -> Option<String> {
     env::var("DATABASE_URL").ok().filter(|url| !url.is_empty())
+}
+
+fn in_ci() -> bool {
+    is_ci_value(env::var("CI").ok().as_deref())
+}
+
+/// Every major runner sets `CI`, but not to the same thing, and a tool that
+/// unsets it by writing an empty string means "not CI".
+fn is_ci_value(value: Option<&str>) -> bool {
+    matches!(value, Some(value) if !matches!(value, "" | "0" | "false"))
 }
 
 pub enum Destination {
@@ -245,9 +273,8 @@ pub async fn run() -> Result<(), Error> {
 
     // Guided when there is a human to guide: a bare `remus`, or flags that name
     // no database. Anything piped or redirected keeps the scriptable behaviour.
-    let interactive = io::stdin().is_terminal() && io::stderr().is_terminal();
     let source = cli.source();
-    if interactive && (bare || source.is_none()) {
+    if cli.interactive() && (bare || source.is_none()) {
         return guide::run(&cli).await;
     }
 
@@ -329,6 +356,22 @@ mod tests {
     fn out_and_out_dir_are_exclusive() {
         let parsed = Cli::try_parse_from(["remus", "-o", "a.mmd", "--out-dir", "out"]);
         assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn nothing_is_asked_when_input_is_refused() {
+        assert!(!parse(&["--no-input"]).interactive());
+        assert!(!parse(&["--ci"]).interactive());
+    }
+
+    #[test]
+    fn a_ci_variable_counts_only_when_it_says_something() {
+        assert!(super::is_ci_value(Some("true")));
+        assert!(super::is_ci_value(Some("1")));
+        assert!(!super::is_ci_value(Some("")));
+        assert!(!super::is_ci_value(Some("0")));
+        assert!(!super::is_ci_value(Some("false")));
+        assert!(!super::is_ci_value(None));
     }
 
     #[test]

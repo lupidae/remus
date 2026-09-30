@@ -11,6 +11,13 @@ rust-version.workspace = true
 name = "remus"
 path = "src/main.rs"
 
+[features]
+default = ["guided"]
+# The guided flow and the terminal machinery it needs. Off gives a CLI that
+# links no prompting code at all, for CI images and minimal builds; every flag
+# keeps working, `remus` on its own just reports that it needs a database.
+guided = ["dep:inquire", "dep:owo-colors"]
+
 [dependencies]
 remus-core.workspace = true
 remus-dbml.workspace = true
@@ -36,5 +43,5 @@ tokio-postgres = { version = "0.7.18", default-features = false, features = ["ru
 tokio-postgres-rustls = "0.14.0"
 rustls = { version = "0.23.45", default-features = false, features = ["ring", "std", "tls12"] }
 webpki-roots = "1.0.9"
-inquire = { version = "0.9.4", default-features = false, features = ["crossterm", "macros"] }
-owo-colors = { version = "4.4.0", default-features = false }
+inquire = { version = "0.9.4", default-features = false, features = ["crossterm", "macros"], optional = true }
+owo-colors = { version = "4.4.0", default-features = false, optional = true }

@@ -59,8 +59,13 @@ remus -u postgres://localhost/app > schema.mmd
 | `--views` | include views and materialized views |
 | `--no-attributes` | boxes and lines, no columns |
 | `--out-dir`, `--out` | write files instead of stdout |
+| `--no-input` | never ask, fail instead — implied when `CI` is set |
 
 `-u` falls back to `DATABASE_URL`. `remus --help` has the rest.
+
+Nothing is ever asked without a terminal, so CI is safe by default. For a binary
+that links no prompting code at all, build with
+`--no-default-features`.
 
 ## Without handing over credentials
 

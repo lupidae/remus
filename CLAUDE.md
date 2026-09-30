@@ -59,6 +59,11 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
 - **Identity is qualified names, never OIDs.** OIDs change on restore and differ
   between environments. Nothing physical that varies between two restores of
   the same schema belongs in the model (that is why `attnum` is not carried).
+- **The guided flow is behind the default-on `guided` feature.** A CI image can
+  build with `--no-default-features` and link no prompting code (14 crates), and
+  every flag still works. Nothing prompts unless stdin and stderr are both
+  terminals, `CI` is unset and `--no-input` was not passed: a PTY is not proof
+  that anyone is watching.
 - **`remus-core` has no I/O and no async.** It must stay compilable to wasm
   later. No `tokio`, no `std::fs` in core.
 - **One crate per emitter.** Each depends on `remus-core` and never on another
