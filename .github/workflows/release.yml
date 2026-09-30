@@ -13,8 +13,29 @@ permissions:
   contents: write
 
 jobs:
+  # upload-rust-binary-action uploads to a release; it does not create one, and
+  # six jobs polling for a release nobody made is six jobs failing.
+  create-release:
+    name: create the release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - name: Create it unless a re-run already did
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG already exists, reusing it"
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
+          fi
+
   binaries:
     name: ${{ matrix.target }}
+    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -38,6 +59,8 @@ jobs:
         with:
           bin: remus
           target: ${{ matrix.target }}
+          # github.ref is a branch on a manual run, so name the tag explicitly.
+          ref: refs/tags/${{ github.event.inputs.tag || github.ref_name }}
           archive: $bin-$target
           include: README.md,LICENSE-MIT,LICENSE-APACHE
           checksum: sha256
