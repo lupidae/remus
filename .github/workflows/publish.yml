@@ -1,0 +1,57 @@
+name: Publish to crates.io
+
+# Its own workflow so it can be re-run alone. A partial publish used to wedge
+# the whole release: `cargo publish --workspace` refuses if any member is
+# already at that version, so one crate landing and the next timing out left no
+# way forward but a version bump.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to publish from
+        required: true
+
+jobs:
+  publish:
+    name: crates.io
+    runs-on: ubuntu-latest
+    # A version number is spent forever; point this environment at a required
+    # reviewer to keep a human in front of it.
+    environment: crates-io
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Check the token is there
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "::error::CARGO_REGISTRY_TOKEN is not set. Add it under Settings > Secrets > Actions."
+            exit 1
+          fi
+      - name: Publish whatever is not published yet
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -uo pipefail
+          # Dependency order by hand, because --workspace cannot resume.
+          for crate in remus-core remus-dbml remus-mermaid remus-sql remus; do
+            echo "::group::$crate"
+            if out=$(cargo publish -p "$crate" --locked 2>&1); then
+              printf '%s\n' "$out"
+            elif printf '%s' "$out" | grep -q "already exists on crates.io index"; then
+              echo "already on crates.io at this version, skipping"
+            else
+              printf '%s\n' "$out" >&2
+              exit 1
+            fi
+            echo "::endgroup::"
+          done

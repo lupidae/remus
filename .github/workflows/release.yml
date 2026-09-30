@@ -67,32 +67,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   crates-io:
-    name: crates.io
-    runs-on: ubuntu-latest
-    # No `needs`: a registry upload and a binary build have nothing to say to
-    # each other, so they run alongside. Point a GitHub Environment named
-    # crates-io at a required reviewer to put a human in front of the one step
-    # here that cannot be undone — a version number is spent forever.
-    environment: crates-io
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Check the token is there
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: |
-          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
-            echo "::error::CARGO_REGISTRY_TOKEN is not set. Add it under Settings > Secrets > Actions."
-            exit 1
-          fi
-      # --workspace resolves the graph and uploads remus-core before the crates
-      # that need it, so there is no order to get wrong by hand.
-      - run: cargo publish --workspace --locked
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    # Reusable, so the same steps can be re-run on their own when a publish
+    # half-lands without dragging the binaries through it again.
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag: ${{ github.event.inputs.tag || github.ref_name }}
+    secrets: inherit
 
   container:
     name: ghcr image
