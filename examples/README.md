@@ -355,9 +355,9 @@ One entity:
 
 ## Showcase
 
-Two schemas, so diagram nodes are qualified (`shop_orders`). Everything the fidelity
-table in the [README](../README.md#formats-and-fidelity) mentions appears somewhere
-in these outputs.
+Two schemas, so diagram nodes are qualified (`shop_orders`). Everything the
+[fidelity table](https://remus.lupidae.com/#fidelity) mentions appears
+somewhere in these outputs.
 
 ### Overview
 

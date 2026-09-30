@@ -34,8 +34,9 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   unambiguous. Keep `FROM cfg` at the end; without it the CTE may never run.
 - **pg_catalog only, never information_schema, never row data.** A reader must
   be able to verify that by reading the SQL.
-- **JSON is authoritative, every other format is lossy**, and the README's
-  fidelity table is the contract. Update it with every emitter change.
+- **JSON is authoritative, every other format is lossy**, and the fidelity table
+  in `site/index.html` is the contract. Update it with every emitter change. The
+  README stays short and links to it; long-form documentation lives on the site.
 - **Emitters are one-directional.** No DBML parser, no SQL parser, no importer:
   anything read back would be a poorer model than the catalog gives.
 - **Four formats, no more** unless someone asks. Graphviz DOT and a Markdown
@@ -58,6 +59,11 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
 - **Identity is qualified names, never OIDs.** OIDs change on restore and differ
   between environments. Nothing physical that varies between two restores of
   the same schema belongs in the model (that is why `attnum` is not carried).
+- **The guided flow is behind the default-on `guided` feature.** A CI image can
+  build with `--no-default-features` and link no prompting code (14 crates), and
+  every flag still works. Nothing prompts unless stdin and stderr are both
+  terminals, `CI` is unset and `--no-input` was not passed: a PTY is not proof
+  that anyone is watching.
 - **`remus-core` has no I/O and no async.** It must stay compilable to wasm
   later. No `tokio`, no `std::fs` in core.
 - **One crate per emitter.** Each depends on `remus-core` and never on another
@@ -103,7 +109,7 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   Regenerate the fixture from `showcase.sql` when the query changes, then
   `just golden` and review.
 - `cargo +nightly fmt` (grouped imports), `clippy -D warnings`, no `allow`.
-- Every emitter change: fidelity table in README, golden files, a unit test if
+- Every emitter change: fidelity table on the site, golden files, a unit test if
   it touches a rule.
 
 ## Verify

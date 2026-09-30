@@ -4,7 +4,7 @@
 //! lossless. Every other format is its own crate (`remus-mermaid`, `remus-dbml`,
 //! `remus-sql`), each depending on this one and never on another emitter, so the
 //! compiler enforces that no format can reach into another's rendering. The
-//! README's fidelity table is the contract for what each keeps.
+//! site's fidelity table is the contract for what each keeps.
 
 pub mod ident;
 
