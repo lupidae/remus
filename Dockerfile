@@ -1,13 +1,14 @@
-# The image is for pipelines, so it is built without the guided flow: nothing
-# in a container has a terminal to prompt at, and dropping it removes 14 crates.
-FROM rust:1-alpine AS build
-RUN apk add --no-cache musl-dev
-WORKDIR /src
-COPY . .
-RUN cargo build --release -p remus --no-default-features --locked
-
-# remus talks to Postgres over TLS with webpki's bundled roots and reads nothing
-# from the filesystem it does not own, so it needs no base image at all.
+# The image is a packaging step, not a build: it carries the exact static musl
+# binaries the release ships, so a bug reported against the image and one
+# reported against the tarball are the same bytes. Compiling here instead meant
+# building Rust twice, the arm64 half under QEMU, for forty minutes a release.
+#
+# So this needs the binaries beside it, which `just image` and the release
+# workflow both arrange. TARGETARCH is amd64 or arm64, set by buildx per platform.
 FROM scratch
-COPY --from=build /src/target/release/remus /remus
+
+ARG TARGETARCH
+COPY remus-${TARGETARCH} /remus
+
+# No base image, no shell, nothing to prompt at: the CLI is the whole container.
 ENTRYPOINT ["/remus"]

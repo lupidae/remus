@@ -1,4 +1,3 @@
-target/
-site/
-examples/
-.github/
+*
+!remus-amd64
+!remus-arm64
