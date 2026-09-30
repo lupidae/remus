@@ -39,10 +39,10 @@
   <h1>Your Postgres schema,<br>as text.</h1>
   <p class="lede">One static binary. Run <code>remus</code>, answer four questions, and get <strong>Mermaid</strong>, <strong>DBML</strong>, <strong>SQL&nbsp;DDL</strong> and <strong>JSON</strong> — with enums, domains, partitions, row level security and generated columns kept intact instead of flattened into generic boxes.</p>
   <div class="install">
-    <code id="install-cmd">cargo install --git https://github.com/lupidae/remus remus</code>
+    <code id="install-cmd">cargo install remus</code>
     <button class="copy" data-copy="#install-cmd" aria-label="Copy install command">Copy</button>
   </div>
-  <p class="fineprint">Rust 1.97 or newer. TLS is built in, so hosted Postgres works with no system OpenSSL.</p>
+  <p class="fineprint">Or a <a href="https://github.com/lupidae/remus/releases/latest">prebuilt binary</a> for macOS, Linux and Windows, with no toolchain at all &mdash; or <code>docker run --rm ghcr.io/lupidae/remus</code>. TLS is built in, so hosted Postgres works without a system OpenSSL.</p>
   <div class="cta">
     <a class="button primary" href="https://github.com/lupidae/remus">View on GitHub</a>
     <a class="button" href="#outputs">See the output</a>
