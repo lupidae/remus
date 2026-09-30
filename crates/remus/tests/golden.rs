@@ -97,6 +97,20 @@ fn every_fixture_matches_its_expected_output() {
 }
 
 fn describe_mismatch(path: &Path, expected: &str, actual: &str) -> String {
+    // `str::lines` drops a trailing \r, so a file checked out with CRLF compares
+    // equal line by line while differing byte for byte. Saying "<end of file>"
+    // at that point sends the reader hunting for a diff that is not there.
+    if expected.lines().eq(actual.lines()) {
+        return format!(
+            "{}: same lines, different bytes — the file on disk has {} line endings",
+            path.display(),
+            if expected.contains("\r\n") {
+                "CRLF"
+            } else {
+                "unexpected"
+            }
+        );
+    }
     let first_diff = expected
         .lines()
         .zip(actual.lines())
@@ -109,4 +123,16 @@ fn describe_mismatch(path: &Path, expected: &str, actual: &str) -> String {
         path.display(),
         first_diff + 1
     )
+}
+
+#[test]
+fn a_line_ending_difference_says_so() {
+    let message = describe_mismatch(Path::new("x.mmd"), "a\r\nb\r\n", "a\nb\n");
+    assert!(message.contains("CRLF"), "{message}");
+}
+
+#[test]
+fn a_real_difference_still_names_the_line() {
+    let message = describe_mismatch(Path::new("x.mmd"), "a\nb\n", "a\nc\n");
+    assert!(message.contains("line 2"), "{message}");
 }

@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  test:
+    name: test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --all-targets
+      # No database is needed: the emitters are tested against a committed
+      # introspection, so this is the same gate on every platform.
+      - run: cargo test --workspace --doc
+      # The slim build is a supported way to install, so it is a tested one.
+      - run: cargo test -p remus --no-default-features --all-targets
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # rustfmt.toml uses imports_granularity/group_imports, which are nightly-only.
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo +nightly fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy -p remus --no-default-features --all-targets -- -D warnings
+
+  package:
+    name: publishable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # Catches a broken manifest, a missing readme or an unpackageable file
+      # here, rather than at the tag, where the version number is already spent.
+      - run: cargo publish --workspace --dry-run --locked
+
+  msrv:
+    name: msrv (rust-version in Cargo.toml)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: SebRollen/toml-action@v1.2.0
+        id: msrv
+        with:
+          file: Cargo.toml
+          field: workspace.package.rust-version
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.value }}
+      - uses: Swatinem/rust-cache@v2
+      # A declared floor nobody compiles against is a guess.
+      - run: cargo check --workspace --all-targets

@@ -6,6 +6,10 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
+homepage.workspace = true
+keywords = ["postgres", "postgresql", "schema", "erd", "mermaid"]
+categories = ["command-line-utilities", "database", "visualization"]
+readme = "../../README.md"
 
 [[bin]]
 name = "remus"

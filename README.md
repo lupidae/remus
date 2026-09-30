@@ -13,8 +13,18 @@
 
 ## Try it
 
+Take a binary from the
+[latest release](https://github.com/lupidae/remus/releases/latest) — macOS,
+Linux (static, musl) and Windows, no toolchain needed. Or:
+
 ```bash
-cargo install --git https://github.com/lupidae/remus remus
+cargo install remus                        # any platform with Rust
+docker run --rm ghcr.io/lupidae/remus --help
+```
+
+Then:
+
+```bash
 remus
 ```
 
@@ -110,4 +120,13 @@ in `remus-core`, and none of them depends on another.
 sync. Both are better places to *draw*. remus is the Unix-shaped complement: text out,
 pipes in, runs in CI.
 
-MIT or Apache-2.0.
+## Contributing
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) has the setup and the house style;
+[`CLAUDE.md`](CLAUDE.md) has every settled decision and why.
+
+## Licence
+
+[MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option. Unless you
+say otherwise, any contribution you deliberately submit for inclusion shall be
+dual licensed as above, with no additional terms.
