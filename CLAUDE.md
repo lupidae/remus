@@ -73,12 +73,16 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   next to the clap enum. Each crate exposes an honest free `render` (infallible,
   and without `DiagramOptions` where they mean nothing) plus a unit-type
   `Emitter` impl for the CLI.
+- **`remus push` is the only network write**, behind the off-by-default `push`
+  feature (release binaries and the image enable it). It sends the JSON model,
+  lossless, to romulus (`POST /api/push`, bearer token scoped to one
+  database) and nothing else: no pull, no sync, no second endpoint.
 
 ## Not in scope right now
 
 - Overlay files (positions, notes, soft FKs keyed by qualified name), a server,
-  realtime, and the storage design from the original conversation. The model is
-  shaped to allow them later; do not start building them.
+  realtime, and storage. They live in romulus (lupidae/romulus, private), which
+  depends on `remus-core`; remus itself stays a CLI.
 - TLS with private CAs. Public roots only; document the `--print-sql` path.
 
 ## Pitfalls

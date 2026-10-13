@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use clap::{Parser, ValueEnum};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use remus_core::{INTROSPECT_SQL, Schema, emit::DiagramOptions};
 
 use crate::{Error, format::Format, guide, introspect};
@@ -23,15 +23,16 @@ Examples:
   remus                                            guided: connect, pick, write
   remus -u postgres://localhost/app > schema.mmd
   remus -u postgres://localhost/app -f all --out-dir docs/schema
-  remus --print-sql | psql \"$DATABASE_URL\" -Atf - | remus -i - -f dbml")]
+  remus --print-sql | psql \"$DATABASE_URL\" -Atf - | remus -i - -f dbml
+  remus -u \"$DATABASE_URL\" push -m \"after migration 42\"   new version in romulus")]
 pub struct Cli {
     /// Connection string. Falls back to DATABASE_URL.
-    #[arg(short, long, value_name = "URL")]
+    #[arg(short, long, value_name = "URL", global = true)]
     url: Option<String>,
 
     /// Read a captured introspection payload instead of connecting; `-` is stdin.
     /// Produce one with `--print-sql`, so remus never needs your credentials.
-    #[arg(short, long, value_name = "FILE")]
+    #[arg(short, long, value_name = "FILE", global = true)]
     input: Option<PathBuf>,
 
     /// Print the introspection SQL and exit. It reads pg_catalog only.
@@ -52,7 +53,7 @@ pub struct Cli {
     out_dir: Option<PathBuf>,
 
     /// Restrict to these schemas (repeatable). Default: every non-system schema.
-    #[arg(short, long = "schema", value_name = "NAME")]
+    #[arg(short, long = "schema", value_name = "NAME", global = true)]
     schemas: Vec<String>,
 
     /// Collapse pure junction tables into N:N relationships. Diagram formats only;
@@ -72,6 +73,39 @@ pub struct Cli {
     /// set in the environment.
     #[arg(long, visible_alias = "ci")]
     no_input: bool,
+
+    #[command(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(Debug, Subcommand)]
+enum Command {
+    /// Send the schema to romulus as a new version of a database.
+    ///
+    /// Identical to the latest version? romulus keeps one copy and says so,
+    /// so CI can push on every merge.
+    Push(PushArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct PushArgs {
+    /// romulus address, e.g. https://romulus.example.com. Falls back to ROMULUS_URL.
+    #[arg(long, env = "ROMULUS_URL", value_name = "URL")]
+    pub to: String,
+
+    /// The database's push token (its settings page in romulus). Falls back
+    /// to ROMULUS_TOKEN; prefer the variable, a flag ends up in shell history.
+    #[arg(
+        long,
+        env = "ROMULUS_TOKEN",
+        hide_env_values = true,
+        value_name = "TOKEN"
+    )]
+    pub token: String,
+
+    /// What changed, shown in the version history.
+    #[arg(short, long, value_name = "TEXT")]
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
@@ -271,9 +305,18 @@ pub async fn run() -> Result<(), Error> {
         return Ok(());
     }
 
+    let source = cli.source();
+    if let Some(Command::Push(args)) = &cli.command {
+        let mut schema = match source.ok_or(Error::NoSource)? {
+            Source::Input(path) => Schema::from_json(&read_input(&path)?)?,
+            Source::Url(url) => introspect::fetch(&url).await?,
+        };
+        schema.retain_schemas(&cli.schemas);
+        return push(&schema, args).await;
+    }
+
     // Guided when there is a human to guide: a bare `remus`, or flags that name
     // no database. Anything piped or redirected keeps the scriptable behaviour.
-    let source = cli.source();
     if cli.interactive() && (bare || source.is_none()) {
         return guide::run(&cli).await;
     }
@@ -292,6 +335,22 @@ pub async fn run() -> Result<(), Error> {
 
     emit(&schema, &formats, &cli.diagram_options(), &destination)?;
     Ok(())
+}
+
+#[cfg(feature = "push")]
+async fn push(schema: &Schema, args: &PushArgs) -> Result<(), Error> {
+    let pushed = crate::push::push(schema, args).await?;
+    if pushed.created {
+        println!("pushed v{}  {}", pushed.number, pushed.url);
+    } else {
+        println!("unchanged, still v{}  {}", pushed.number, pushed.url);
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "push"))]
+async fn push(_schema: &Schema, _args: &PushArgs) -> Result<(), Error> {
+    Err(Error::PushUnavailable)
 }
 
 fn read_input(path: &Path) -> Result<String, Error> {
@@ -372,6 +431,30 @@ mod tests {
         assert!(!super::is_ci_value(Some("0")));
         assert!(!super::is_ci_value(Some("false")));
         assert!(!super::is_ci_value(None));
+    }
+
+    #[test]
+    fn connection_flags_work_on_either_side_of_push() {
+        let before = parse(&[
+            "-u",
+            "postgres://h/db",
+            "push",
+            "--to",
+            "https://r",
+            "--token",
+            "t",
+        ]);
+        let after = parse(&[
+            "push",
+            "-u",
+            "postgres://h/db",
+            "--to",
+            "https://r",
+            "--token",
+            "t",
+        ]);
+        assert_eq!(before.url, after.url);
+        assert!(matches!(after.command, Some(super::Command::Push(_))));
     }
 
     #[test]
