@@ -269,17 +269,53 @@ pub struct EnumType {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(from = "DomainPayload")]
 pub struct DomainType {
     pub schema: String,
     pub name: String,
     pub base_type: String,
-    #[serde(default)]
     pub not_null: bool,
     pub default: Option<String>,
-    /// `pg_get_constraintdef` of each CHECK, e.g. `CHECK ((VALUE > 0))`.
-    #[serde(default)]
+    /// `pg_get_constraintdef` of each CHECK, e.g. `CHECK ((VALUE > 0))`. Never
+    /// `NOT NULL`: that is `not_null`, whichever major the payload came from.
     pub constraints: Vec<String>,
     pub comment: Option<String>,
+}
+
+/// A domain as a payload spells it. PostgreSQL 17+ also catalogues a domain's
+/// NOT NULL as a constraint, and payloads captured there before the query kept
+/// to CHECKs list it in `constraints` too (twice, after a replay on 17). It is
+/// folded into `not_null` on the way in, not in [`Schema::canonical`], so that
+/// no emitter and no comparison ever meets the same domain in two shapes.
+#[derive(Deserialize)]
+struct DomainPayload {
+    schema: String,
+    name: String,
+    base_type: String,
+    #[serde(default)]
+    not_null: bool,
+    default: Option<String>,
+    #[serde(default)]
+    constraints: Vec<String>,
+    comment: Option<String>,
+}
+
+impl From<DomainPayload> for DomainType {
+    fn from(mut payload: DomainPayload) -> Self {
+        // `pg_get_constraintdef` prints exactly this for a domain's NOT NULL,
+        // which can be neither NOT VALID nor DEFERRABLE.
+        let listed = payload.constraints.iter().any(|c| c == "NOT NULL");
+        payload.constraints.retain(|c| c != "NOT NULL");
+        Self {
+            schema: payload.schema,
+            name: payload.name,
+            base_type: payload.base_type,
+            not_null: payload.not_null || listed,
+            default: payload.default,
+            constraints: payload.constraints,
+            comment: payload.comment,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -515,6 +551,51 @@ mod tests {
         );
         let schema = Schema::from_json(&payload).unwrap();
         assert_eq!(schema.partitions[0].partition_key, None);
+    }
+
+    /// The domain from lupidae/remus#13, with `constraints` as a payload lists them.
+    fn with_domain_constraints(not_null: bool, constraints: &str) -> Schema {
+        let payload = MINIMAL.replace(
+            r#""entities": ["#,
+            &format!(
+                r#""domains": [
+                    {{"schema": "public", "name": "email", "base_type": "text",
+                     "not_null": {not_null}, "default": null,
+                     "constraints": {constraints}, "comment": null}}
+                ],
+                "entities": ["#
+            ),
+        );
+        Schema::from_json(&payload).unwrap()
+    }
+
+    #[test]
+    fn a_domain_reads_the_same_whichever_major_captured_it() {
+        let pg16 = with_domain_constraints(true, r#"["CHECK ((VALUE ~ '@'::text))"]"#);
+        let pg17 = with_domain_constraints(true, r#"["CHECK ((VALUE ~ '@'::text))", "NOT NULL"]"#);
+        let pg17_replayed = with_domain_constraints(
+            true,
+            r#"["CHECK ((VALUE ~ '@'::text))", "NOT NULL", "NOT NULL"]"#,
+        );
+        assert_eq!(pg16.domains[0].constraints, ["CHECK ((VALUE ~ '@'::text))"]);
+        assert!(pg16.domains[0].not_null);
+        assert_eq!(pg17, pg16);
+        assert_eq!(pg17_replayed, pg16);
+    }
+
+    #[test]
+    fn a_listed_not_null_survives_a_payload_without_the_flag() {
+        let schema = with_domain_constraints(false, r#"["NOT NULL"]"#);
+        assert!(schema.domains[0].not_null);
+        assert!(schema.domains[0].constraints.is_empty());
+    }
+
+    #[test]
+    fn a_normalised_domain_serialises_without_its_not_null_constraint() {
+        let pg17 = with_domain_constraints(true, r#"["CHECK ((VALUE ~ '@'::text))", "NOT NULL"]"#);
+        let json = serde_json::to_string(&pg17).unwrap();
+        assert!(!json.contains(r#""NOT NULL""#), "{json}");
+        assert_eq!(Schema::from_json(&json).unwrap(), pg17);
     }
 
     #[test]

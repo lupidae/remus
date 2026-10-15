@@ -92,6 +92,11 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   `partitions` CTE filters on relkind for that reason.
 - Indexes backing PK/UNIQUE/EXCLUDE constraints are excluded from `indexes`;
   emitting both would create the same name twice.
+- PostgreSQL 17 records a domain's NOT NULL in `pg_constraint` (`contype = 'n'`)
+  and 18 a column's too. Select `pg_constraint` by explicit `contype`, never
+  every row, or the payload depends on the major and the SQL fails to replay on
+  18 (#13). Payloads captured with the doubled domain NOT NULL are folded back on
+  deserialisation.
 - Policies naming roles and defaults calling user functions make the SQL output
   depend on objects we do not create. Documented in the header, by design.
 - Mermaid attribute types allow only `[A-Za-z0-9_()\[\]]`; `token()` sanitises.
