@@ -142,7 +142,7 @@
       <div class="panel" role="tabpanel" data-panel="sql" hidden>
         <div class="pane-head"><span>schema.sql</span><button class="copy" data-copy-src="examples/blog/out/schema.sql">Copy</button></div>
         <pre class="code" data-src="examples/blog/out/schema.sql" data-lang="sql"></pre>
-        <p class="caption">Dependency-ordered DDL that replays into an empty database. Foreign keys come as <code>ALTER TABLE</code> after every table exists; views after what they read. Not <code>pg_dump</code>, and the header says exactly what it leaves out.</p>
+        <p class="caption">Dependency-ordered DDL that replays into an empty database. Foreign keys come as <code>ALTER TABLE</code> after every table and index exists; views after what they read. Not <code>pg_dump</code>, and the header says exactly what it leaves out.</p>
       </div>
 
       <div class="panel" role="tabpanel" data-panel="json" hidden>
@@ -213,6 +213,7 @@
     </table>
   </div>
   <p class="fineprint">NOT NULL is a property of the column or domain, never a constraint of its own. PostgreSQL 17 (domains) and 18 (columns) also give it a constraint name, which no format carries: that is what keeps the same schema reading into the same model on every major.</p>
+  <p class="fineprint">The SQL replays into an empty database with <code>ON_ERROR_STOP</code> and reads back into the same model, checked on PostgreSQL 16, 17 and 18. <code>NOT VALID</code> checks stay unvalidated. Partitions are not modelled, so they get their parent's indexes under names PostgreSQL picks, not the original ones.</p>
 </section>
 
 <section id="how" class="how">

@@ -66,7 +66,7 @@ CREATE TABLE shop.orders (
     status shop.order_status DEFAULT 'draft'::shop.order_status NOT NULL,
     subtotal shop.money_cents,
     tax shop.money_cents,
-    total bigint GENERATED ALWAYS AS (((subtotal)::bigint + (tax)::bigint)) STORED,
+    total bigint GENERATED ALWAYS AS ((subtotal)::bigint + (tax)::bigint) STORED,
     placed_at timestamp with time zone,
     note text,
     CONSTRAINT orders_placed_when_not_draft CHECK (((status = 'draft'::shop.order_status) OR (placed_at IS NOT NULL))),
@@ -107,6 +107,10 @@ CREATE TABLE shop.warehouses (
     CONSTRAINT warehouses_pkey PRIMARY KEY (region, code)
 );
 
+CREATE INDEX orders_customer_idx ON shop.orders USING btree (customer_id);
+CREATE UNIQUE INDEX orders_note_lower_idx ON shop.orders USING btree (lower(note)) WHERE (note IS NOT NULL);
+CREATE INDEX orders_open_idx ON shop.orders USING btree (placed_at DESC) WHERE (status = ANY (ARRAY['placed'::shop.order_status, 'shipped'::shop.order_status]));
+
 CREATE TABLE audit.events_2026 PARTITION OF audit.events FOR VALUES FROM ('2026-01-01 00:00:00+00') TO ('2027-01-01 00:00:00+00');
 CREATE TABLE audit.events_2027 PARTITION OF audit.events FOR VALUES FROM ('2027-01-01 00:00:00+00') TO ('2028-01-01 00:00:00+00') PARTITION BY HASH (id);
 CREATE TABLE audit.events_2027_h0 PARTITION OF audit.events_2027 FOR VALUES WITH (modulus 2, remainder 0);
@@ -122,10 +126,6 @@ ALTER TABLE shop.orders ADD CONSTRAINT orders_customer_id_fkey FOREIGN KEY (cust
 ALTER TABLE shop.promotions ADD CONSTRAINT promotions_product_id_fkey FOREIGN KEY (product_id) REFERENCES shop.products(id);
 ALTER TABLE shop.stock ADD CONSTRAINT stock_product_id_fkey FOREIGN KEY (product_id) REFERENCES shop.products(id);
 ALTER TABLE shop.stock ADD CONSTRAINT stock_warehouse_fkey FOREIGN KEY (warehouse_code, region) REFERENCES shop.warehouses(code, region) DEFERRABLE INITIALLY DEFERRED;
-
-CREATE INDEX orders_customer_idx ON shop.orders USING btree (customer_id);
-CREATE UNIQUE INDEX orders_note_lower_idx ON shop.orders USING btree (lower(note)) WHERE (note IS NOT NULL);
-CREATE INDEX orders_open_idx ON shop.orders USING btree (placed_at DESC) WHERE (status = ANY (ARRAY['placed'::shop.order_status, 'shipped'::shop.order_status]));
 
 CREATE MATERIALIZED VIEW shop.daily_totals AS
 SELECT date_trunc('day'::text, placed_at) AS day,

@@ -274,8 +274,8 @@ Ref "profiles_user_id_fkey": "public"."profiles"."user_id" - "public"."users"."i
 ### SQL DDL
 
 [`out/schema.sql`](blog/out/schema.sql). Foreign keys come as `ALTER TABLE` after
-every table exists, views after the tables they read, comments last. The file replays
-into an empty database as-is.
+every table and index exists, views after the tables they read, comments last. The
+file replays into an empty database as-is.
 
 ```sql
 CREATE TYPE public.post_status AS ENUM ('draft', 'published', 'archived');
@@ -295,10 +295,10 @@ CREATE TABLE public.posts (
 
 -- ... every other table ...
 
+CREATE INDEX posts_published_idx ON public.posts USING btree (published_at DESC) WHERE (status = 'published'::public.post_status);
+
 ALTER TABLE public.posts ADD CONSTRAINT posts_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.users(id);
 ALTER TABLE public.profiles ADD CONSTRAINT profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-CREATE INDEX posts_published_idx ON public.posts USING btree (published_at DESC) WHERE (status = 'published'::public.post_status);
 
 CREATE VIEW public.published_posts AS
 SELECT p.id,

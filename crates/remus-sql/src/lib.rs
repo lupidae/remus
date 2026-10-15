@@ -5,12 +5,28 @@
 //! the header of every file says so. What it is good for is spinning up a
 //! scratch copy of a schema, and reading a schema diff as SQL in a pull request.
 //!
-//! Statement order is dependency-correct: schemas, extensions, types, sequences,
-//! tables, partitions parent first, foreign keys (as `ALTER TABLE`, after every
-//! table exists, because circular references are legal), indexes, views in
-//! dependency order, row level security, comments.
+//! The output has to replay with `psql -v ON_ERROR_STOP=1`, so each statement
+//! comes after everything it names:
+//!
+//! 1. schemas, extensions, then types: enums, domains, composites;
+//! 2. sequences, then tables with every constraint inline but foreign keys;
+//! 3. indexes on tables, before partitions: `pg_get_indexdef` says `ON ONLY`
+//!    for a partitioned table, which builds a valid index only while the table
+//!    has no partition yet, and each partition created afterwards inherits it;
+//! 4. partitions, parent first;
+//! 5. foreign keys, as `ALTER TABLE` once every table exists because circular
+//!    references are legal, and after the indexes because a unique index, not
+//!    only a constraint, can be what a foreign key references;
+//! 6. views and materialized views in dependency order, then the indexes on
+//!    materialized views;
+//! 7. row level security, then comments.
+//!
+//! A `NOT VALID` check is added with `ALTER` right after its table or domain:
+//! `CREATE TABLE` would validate it against the empty table and drop the flag,
+//! and `CREATE DOMAIN` does not accept it at all.
 
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashSet},
     fmt::Write,
 };
@@ -22,8 +38,8 @@ use remus_core::{
         ident::{qualified, quote_ident, quote_literal},
     },
     model::{
-        Column, ConstraintKind, Entity, EntityKind, Generated, Identity, Partition, PolicyCommand,
-        RelationRef,
+        Column, Constraint, ConstraintKind, Entity, EntityKind, Generated, Identity, Partition,
+        PolicyCommand, RelationRef,
     },
 };
 
@@ -54,10 +70,11 @@ pub fn render(schema: &Schema) -> String {
     write_types(&mut out, schema);
     write_sequences(&mut out, schema);
     write_tables(&mut out, schema);
+    write_indexes(&mut out, schema, EntityKind::is_table);
     write_partitions(&mut out, schema);
     write_foreign_keys(&mut out, schema);
-    write_indexes(&mut out, schema);
     write_views(&mut out, schema);
+    write_indexes(&mut out, schema, EntityKind::is_view);
     write_row_level_security(&mut out, schema);
     write_comments(&mut out, schema);
     out
@@ -131,22 +148,31 @@ fn write_types(out: &mut String, schema: &Schema) {
         );
     }
     for d in &schema.domains {
-        let _ = write!(
-            out,
-            "CREATE DOMAIN {} AS {}",
-            qualified(&d.schema, &d.name),
-            d.base_type
-        );
+        let name = qualified(&d.schema, &d.name);
+        let _ = write!(out, "CREATE DOMAIN {name} AS {}", d.base_type);
         if let Some(default) = &d.default {
             let _ = write!(out, " DEFAULT {default}");
         }
         if d.not_null {
             out.push_str(" NOT NULL");
         }
-        for constraint in &d.constraints {
+        // Domain constraint names are not modelled: a replay names them
+        // `<domain>_check`, `_check1`, ... in statement order, and the model
+        // lists them by name. Moving to ALTER DOMAIN at the first NOT VALID one,
+        // rather than for the NOT VALID ones only, keeps that order.
+        let first_not_valid = d
+            .constraints
+            .iter()
+            .position(|c| is_not_valid(c))
+            .unwrap_or(d.constraints.len());
+        let (inline, added) = d.constraints.split_at(first_not_valid);
+        for constraint in inline {
             let _ = write!(out, " {constraint}");
         }
         out.push_str(";\n");
+        for constraint in added {
+            let _ = writeln!(out, "ALTER DOMAIN {name} ADD {constraint};");
+        }
     }
     for c in &schema.composites {
         let attributes = c
@@ -216,13 +242,16 @@ fn write_table(out: &mut String, entity: &Entity) {
         qualified(&entity.schema, &entity.name)
     );
     let mut lines: Vec<String> = entity.columns.iter().map(column_definition).collect();
-    // Foreign keys are added after every table exists; everything else is
-    // self-contained and reads best inline.
+    // Foreign keys are added after every table exists, NOT VALID checks right
+    // after this one; everything else is self-contained and reads best inline.
+    let (inline, added): (Vec<&Constraint>, Vec<&Constraint>) = entity
+        .constraints
+        .iter()
+        .filter(|c| c.kind != ConstraintKind::ForeignKey)
+        .partition(|c| !is_not_valid(&c.definition));
     lines.extend(
-        entity
-            .constraints
+        inline
             .iter()
-            .filter(|c| c.kind != ConstraintKind::ForeignKey)
             .map(|c| format!("CONSTRAINT {} {}", quote_ident(&c.name), c.definition)),
     );
     for (i, line) in lines.iter().enumerate() {
@@ -234,6 +263,9 @@ fn write_table(out: &mut String, entity: &Entity) {
         let _ = write!(out, " PARTITION BY {key}");
     }
     out.push_str(";\n");
+    for constraint in added {
+        add_constraint(out, entity, constraint);
+    }
 
     for column in &entity.columns {
         if let Some(sequence) = column.default.as_deref().and_then(owned_sequence) {
@@ -256,7 +288,11 @@ fn column_definition(column: &Column) -> String {
                 Generated::Stored => "STORED",
                 Generated::Virtual => "VIRTUAL",
             };
-            let _ = write!(line, " GENERATED ALWAYS AS ({expression}) {storage}");
+            let _ = write!(
+                line,
+                " GENERATED ALWAYS AS {} {storage}",
+                parenthesized(expression)
+            );
         }
         (Some(_), _, None) => {}
         (None, Some(identity), _) => {
@@ -349,13 +385,7 @@ fn write_foreign_keys(out: &mut String, schema: &Schema) {
     for entity in schema.entities.iter().filter(|e| e.kind.is_table()) {
         for fk in entity.foreign_keys() {
             any = true;
-            let _ = writeln!(
-                out,
-                "ALTER TABLE {} ADD CONSTRAINT {} {};",
-                qualified(&entity.schema, &entity.name),
-                quote_ident(&fk.name),
-                fk.definition
-            );
+            add_constraint(out, entity, fk);
         }
     }
     if any {
@@ -363,9 +393,25 @@ fn write_foreign_keys(out: &mut String, schema: &Schema) {
     }
 }
 
-fn write_indexes(out: &mut String, schema: &Schema) {
+fn add_constraint(out: &mut String, entity: &Entity, constraint: &Constraint) {
+    let _ = writeln!(
+        out,
+        "ALTER TABLE {} ADD CONSTRAINT {} {};",
+        qualified(&entity.schema, &entity.name),
+        quote_ident(&constraint.name),
+        constraint.definition
+    );
+}
+
+/// `pg_get_constraintdef` ends an unvalidated constraint with exactly this.
+/// A CHECK's own expression always closes with a parenthesis, so it cannot.
+fn is_not_valid(definition: &str) -> bool {
+    definition.ends_with(" NOT VALID")
+}
+
+fn write_indexes(out: &mut String, schema: &Schema, on: impl Fn(&EntityKind) -> bool) {
     let mut any = false;
-    for entity in &schema.entities {
+    for entity in schema.entities.iter().filter(|e| on(&e.kind)) {
         for index in &entity.indexes {
             any = true;
             let _ = writeln!(out, "{};", index.definition);
@@ -468,10 +514,10 @@ fn write_row_level_security(out: &mut String, schema: &Schema) {
                 let _ = write!(out, " TO {roles}");
             }
             if let Some(using) = &policy.using {
-                let _ = write!(out, " USING {using}");
+                let _ = write!(out, " USING {}", parenthesized(using));
             }
             if let Some(check) = &policy.check {
-                let _ = write!(out, " WITH CHECK {check}");
+                let _ = write!(out, " WITH CHECK {}", parenthesized(check));
             }
             out.push_str(";\n");
         }
@@ -479,6 +525,46 @@ fn write_row_level_security(out: &mut String, schema: &Schema) {
     if any {
         out.push('\n');
     }
+}
+
+/// `USING`, `WITH CHECK` and `GENERATED ALWAYS AS` take their expression in
+/// parentheses. `pg_get_expr` wraps an operator or a boolean test, but not a
+/// constant, a column, a function call, a cast or a CASE (`USING true` is a
+/// syntax error), so add one pair exactly when the outer one is missing.
+fn parenthesized(expression: &str) -> Cow<'_, str> {
+    if is_parenthesized(expression) {
+        Cow::Borrowed(expression)
+    } else {
+        Cow::Owned(format!("({expression})"))
+    }
+}
+
+/// Whether the opening parenthesis is closed by the last character, not
+/// earlier as in `(k)::boolean`. Parentheses inside string literals and quoted
+/// identifiers do not count; a doubled quote closes and reopens, which leaves
+/// the state as it was.
+fn is_parenthesized(expression: &str) -> bool {
+    let Some(body) = expression.strip_prefix('(') else {
+        return false;
+    };
+    let mut depth = 1_usize;
+    let mut quote = None;
+    for (at, c) in body.char_indices() {
+        match (quote, c) {
+            (Some(open), _) if c == open => quote = None,
+            (Some(_), _) => {}
+            (None, '\'' | '"') => quote = Some(c),
+            (None, '(') => depth += 1,
+            (None, ')') => {
+                depth -= 1;
+                if depth == 0 {
+                    return at + 1 == body.len();
+                }
+            }
+            (None, _) => {}
+        }
+    }
+    false
 }
 
 fn write_comments(out: &mut String, schema: &Schema) {
@@ -554,10 +640,48 @@ fn write_comments(out: &mut String, schema: &Schema) {
 mod tests {
     use remus_core::{Schema, fixtures::SHOWCASE, model::Partition};
 
-    use super::{owned_sequence, render};
+    use super::{owned_sequence, parenthesized, render};
 
     fn showcase() -> Schema {
         Schema::from_json(SHOWCASE).unwrap()
+    }
+
+    /// A schema holding only these entities, given as payload JSON.
+    fn with_entities(entities: &str) -> Schema {
+        Schema::from_json(&format!(
+            r#"{{"remus_version": "0.1", "database": "db", "server_version": "18.0",
+                 "entities": {entities}}}"#
+        ))
+        .unwrap()
+    }
+
+    /// lupidae/remus#16 as introspected, columns left out, plus a WITH CHECK.
+    fn issue_16() -> Schema {
+        with_entities(
+            r#"[
+            {"schema": "public", "name": "doc_stats", "kind": "m",
+             "view_definition": " SELECT owner,\n    count(*) AS n\n   FROM public.docs\n  GROUP BY owner;",
+             "depends_on": [{"schema": "public", "name": "docs"}],
+             "indexes": [{"name": "doc_stats_owner", "unique": true,
+                          "definition": "CREATE UNIQUE INDEX doc_stats_owner ON public.doc_stats USING btree (owner)"}]},
+            {"schema": "public", "name": "docs", "kind": "r", "rls": true,
+             "constraints": [{"name": "docs_pkey", "kind": "p", "columns": ["id"],
+                              "definition": "PRIMARY KEY (id)"}],
+             "indexes": [{"name": "docs_code_key", "unique": true,
+                          "definition": "CREATE UNIQUE INDEX docs_code_key ON public.docs USING btree (code)"}],
+             "policies": [{"name": "all_read", "command": "r", "permissive": true, "using": "true"},
+                          {"name": "no_insert", "command": "a", "permissive": true, "check": "false"}]},
+            {"schema": "public", "name": "refs", "kind": "r",
+             "constraints": [{"name": "refs_doc_code_fkey", "kind": "f", "columns": ["doc_code"],
+                              "ref_schema": "public", "ref_table": "docs", "ref_columns": ["code"],
+                              "definition": "FOREIGN KEY (doc_code) REFERENCES public.docs(code)"}]}
+        ]"#,
+        )
+    }
+
+    fn offset(sql: &str, statement: &str) -> usize {
+        sql.find(statement)
+            .unwrap_or_else(|| panic!("no {statement:?} in:\n{sql}"))
     }
 
     fn partition(parent: &str, child: &str, bound: &str, key: Option<&str>) -> Partition {
@@ -670,7 +794,7 @@ mod tests {
         assert!(sql.contains("id bigint GENERATED ALWAYS AS IDENTITY NOT NULL"));
         assert!(sql.contains("id bigint GENERATED BY DEFAULT AS IDENTITY NOT NULL"));
         assert!(sql.contains(
-            "total bigint GENERATED ALWAYS AS (((subtotal)::bigint + (tax)::bigint)) STORED"
+            "total bigint GENERATED ALWAYS AS ((subtotal)::bigint + (tax)::bigint) STORED"
         ));
         assert!(sql.contains("CREATE SEQUENCE IF NOT EXISTS shop.orders_id_seq;"));
         assert!(sql.contains("ALTER SEQUENCE shop.orders_id_seq OWNED BY shop.orders.id;"));
@@ -740,6 +864,108 @@ mod tests {
         .unwrap();
         assert!(render(&schema).contains(
             "CREATE DOMAIN public.email AS text NOT NULL CHECK ((VALUE ~ '@'::text));\n"
+        ));
+    }
+
+    #[test]
+    fn a_foreign_key_comes_after_the_unique_index_it_references() {
+        let sql = render(&issue_16());
+        assert!(
+            offset(&sql, "CREATE UNIQUE INDEX docs_code_key ")
+                < offset(&sql, "ADD CONSTRAINT refs_doc_code_fkey ")
+        );
+    }
+
+    #[test]
+    fn an_index_on_a_materialized_view_comes_after_the_view() {
+        let sql = render(&issue_16());
+        assert!(
+            offset(&sql, "CREATE MATERIALIZED VIEW public.doc_stats AS")
+                < offset(&sql, "CREATE UNIQUE INDEX doc_stats_owner ")
+        );
+    }
+
+    /// `ON ONLY` builds a valid index only on a table with no partition yet.
+    #[test]
+    fn a_partitioned_tables_index_comes_before_its_partitions() {
+        let mut schema = with_entities(
+            r#"[{"schema": "public", "name": "events", "kind": "p", "partition_key": "RANGE (at)",
+                 "indexes": [{"name": "events_kind_idx",
+                              "definition": "CREATE INDEX events_kind_idx ON ONLY public.events USING btree (kind)"}]}]"#,
+        );
+        schema.partitions = three_level_tree(&[0, 1, 2, 3, 4, 5, 6]).partitions;
+        let sql = render(&schema);
+        assert!(
+            offset(&sql, "CREATE INDEX events_kind_idx ON ONLY public.events ")
+                < offset(&sql, " PARTITION OF ")
+        );
+    }
+
+    #[test]
+    fn a_bare_policy_expression_is_parenthesized() {
+        let sql = render(&issue_16());
+        assert!(sql.contains("CREATE POLICY all_read ON public.docs FOR SELECT USING (true);\n"));
+        assert!(
+            sql.contains("CREATE POLICY no_insert ON public.docs FOR INSERT WITH CHECK (false);\n")
+        );
+    }
+
+    /// The left column is what `pg_get_expr` returns for a policy on
+    /// PostgreSQL 16, 17 and 18, but the last two rows.
+    #[test]
+    fn an_expression_gets_exactly_one_pair_of_parentheses() {
+        let case = "\nCASE\n    WHEN (a > 0) THEN true\n    ELSE false\nEND";
+        for (expression, emitted) in [
+            ("true", "(true)"),
+            ("active", "(active)"),
+            ("ok()", "(ok())"),
+            ("COALESCE(active, false)", "(COALESCE(active, false))"),
+            ("(k)::boolean", "((k)::boolean)"),
+            (case, &format!("({case})")),
+            ("(a = 1)", "(a = 1)"),
+            ("((a > 0) AND (b > 0))", "((a > 0) AND (b > 0))"),
+            (
+                "((k = ')('::text) OR (k = '\"('::text))",
+                "((k = ')('::text) OR (k = '\"('::text))",
+            ),
+            ("(a = 1) OR (b = 2)", "((a = 1) OR (b = 2))"),
+            ("(\")\"\"\" = 'it''s (')", "(\")\"\"\" = 'it''s (')"),
+        ] {
+            assert_eq!(parenthesized(expression), emitted, "{expression:?}");
+        }
+    }
+
+    /// CREATE TABLE would validate it against the empty table and lose the flag.
+    #[test]
+    fn a_not_valid_check_is_added_after_its_table() {
+        let sql = render(&with_entities(
+            r#"[{"schema": "public", "name": "t", "kind": "r",
+                 "constraints": [
+                     {"name": "t_low", "kind": "c", "definition": "CHECK ((x > 0)) NOT VALID"},
+                     {"name": "t_high", "kind": "c", "definition": "CHECK ((x < 9))"}]}]"#,
+        ));
+        assert!(sql.contains(
+            "    CONSTRAINT t_high CHECK ((x < 9))\n);\n\
+             ALTER TABLE public.t ADD CONSTRAINT t_low CHECK ((x > 0)) NOT VALID;\n"
+        ));
+    }
+
+    /// CREATE DOMAIN rejects NOT VALID; from the first one on, every check
+    /// goes through ALTER DOMAIN so a replay lists them in the same order.
+    #[test]
+    fn a_domain_moves_to_alter_domain_at_its_first_not_valid_check() {
+        let schema = Schema::from_json(
+            r#"{"remus_version": "0.1", "database": "db", "server_version": "18.0",
+                "domains": [{"schema": "public", "name": "d", "base_type": "integer",
+                             "constraints": ["CHECK ((VALUE > 0))",
+                                             "CHECK ((VALUE < 10)) NOT VALID",
+                                             "CHECK ((VALUE <> 5))"]}]}"#,
+        )
+        .unwrap();
+        assert!(render(&schema).contains(
+            "CREATE DOMAIN public.d AS integer CHECK ((VALUE > 0));\n\
+             ALTER DOMAIN public.d ADD CHECK ((VALUE < 10)) NOT VALID;\n\
+             ALTER DOMAIN public.d ADD CHECK ((VALUE <> 5));\n"
         ));
     }
 
