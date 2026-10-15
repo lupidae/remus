@@ -35,6 +35,35 @@ fixture PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres":
     psql "$admin" -qc "DROP DATABASE remus_showcase WITH (FORCE)"
     just golden
 
+# prove `-f sql` replays: load SCHEMA into a scratch database, introspect it, render
+# SQL, rebuild the database from that SQL alone and require the same model back.
+# Same database name both times, because the name is part of the model; same
+# PGURL contract as `fixture`.
+roundtrip PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres" SCHEMA="crates/remus-core/fixtures/showcase.sql":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cargo build -q -p remus
+    admin="{{PGURL}}"
+    scratch="{{trim_end_match(PGURL, "/postgres")}}/remus_roundtrip"
+    work="$(mktemp -d)"
+    trap 'rm -rf "$work"' EXIT
+    fresh() {
+        psql "$admin" -v ON_ERROR_STOP=1 -qc "DROP DATABASE IF EXISTS remus_roundtrip WITH (FORCE)" -c "CREATE DATABASE remus_roundtrip TEMPLATE template0"
+    }
+    canonical() {
+        python3 -c 'import sys, json; d = json.load(open(sys.argv[1])); d.pop("generated_at"); print(json.dumps(d, indent=2))' "$1"
+    }
+    fresh
+    psql "$scratch" -v ON_ERROR_STOP=1 -q -f "{{SCHEMA}}"
+    target/debug/remus --no-input -u "$scratch" -f json -o "$work/original.json"
+    target/debug/remus --no-input -i "$work/original.json" -f sql -o "$work/schema.sql"
+    fresh
+    psql "$scratch" -v ON_ERROR_STOP=1 -q -f "$work/schema.sql"
+    target/debug/remus --no-input -u "$scratch" -f json -o "$work/replayed.json"
+    psql "$admin" -qc "DROP DATABASE remus_roundtrip WITH (FORCE)"
+    diff -u <(canonical "$work/original.json") <(canonical "$work/replayed.json")
+    echo "{{SCHEMA}}: the SQL output replays to the same model"
+
 # regenerate examples/*/ outputs from each example's schema.sql (same PGURL contract
 # as `fixture`). Outputs are committed so the examples page renders on GitHub.
 examples PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres":

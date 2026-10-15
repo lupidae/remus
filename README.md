@@ -102,11 +102,12 @@ other format keeps.
 ## Development
 
 ```bash
-just check    # fmt, check, clippy -D warnings, tests
-just golden   # accept emitter output changes, then review the diff
-just demo     # run against DATABASE_URL, everything under ./out
-just examples # regenerate examples/*/out from each schema.sql
-just site     # refresh the landing page, `just site-deploy` publishes it
+just check     # fmt, check, clippy -D warnings, tests
+just golden    # accept emitter output changes, then review the diff
+just demo      # run against DATABASE_URL, everything under ./out
+just examples  # regenerate examples/*/out from each schema.sql
+just roundtrip # replay the SQL output into an empty database, same model back
+just site      # refresh the landing page, `just site-deploy` publishes it
 ```
 
 No database is needed to run the tests: emitters are golden-file tested against a

@@ -120,4 +120,5 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
 just check
 just demo                                  # needs DATABASE_URL
 psql "$DATABASE_URL" -Atf crates/remus-core/queries/introspect.sql | remus --input - -f sql
+just roundtrip                             # SQL output replays to the same model (PG 16)
 ```

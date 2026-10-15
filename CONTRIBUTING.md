@@ -35,6 +35,7 @@ docker run -d --name remus-pg -e POSTGRES_PASSWORD=postgres \
   -p 5432:5432 postgres:16
 just demo           # run against DATABASE_URL
 just examples       # regenerate examples/*/out
+just roundtrip      # replay -f sql into an empty database, same model back
 ```
 
 Postgres **16** on purpose: `server_version` is recorded in the fixture and
