@@ -90,6 +90,12 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
   `ARRAY[...]::text[]` predicate). Not a bug.
 - `pg_inherits` also links partitioned indexes to their partitions; the
   `partitions` CTE filters on relkind for that reason.
+- `pg_constraint` also holds what PostgreSQL derives: a FK to a partitioned
+  table gets a copy per referenced partition (`conparentid <> 0`) on the same
+  table. Emitting those fails the replay; the `cons` CTE keeps declared ones.
+- Read expressions through a deparse function, never a stored text column:
+  `pg_type.typdefault` was deparsed once under its creator's search_path and
+  can name a type unqualified. `pg_get_expr(typdefaultbin, 0)` honours the pin.
 - Indexes backing PK/UNIQUE/EXCLUDE constraints are excluded from `indexes`;
   emitting both would create the same name twice.
 - PostgreSQL 17 records a domain's NOT NULL in `pg_constraint` (`contype = 'n'`)
