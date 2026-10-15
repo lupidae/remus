@@ -728,6 +728,21 @@ mod tests {
         assert_eq!(partition_statements(&render(&schema)).len(), 2);
     }
 
+    /// PostgreSQL 18 rejects a second NOT NULL on a domain outright.
+    #[test]
+    fn a_domain_captured_on_17_or_later_says_not_null_once() {
+        let schema = Schema::from_json(
+            r#"{"remus_version": "0.1", "database": "db", "server_version": "17.6",
+                "domains": [{"schema": "public", "name": "email", "base_type": "text",
+                             "not_null": true, "default": null, "comment": null,
+                             "constraints": ["CHECK ((VALUE ~ '@'::text))", "NOT NULL"]}]}"#,
+        )
+        .unwrap();
+        assert!(render(&schema).contains(
+            "CREATE DOMAIN public.email AS text NOT NULL CHECK ((VALUE ~ '@'::text));\n"
+        ));
+    }
+
     #[test]
     fn partitions_and_policies_are_emitted() {
         let sql = render(&showcase());

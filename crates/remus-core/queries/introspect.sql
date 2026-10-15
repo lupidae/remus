@@ -210,8 +210,12 @@ SELECT jsonb_build_object(
             'base_type',   format_type(t.typbasetype, t.typtypmod),
             'not_null',    t.typnotnull,
             'default',     t.typdefault,
+            -- CHECKs only. PostgreSQL 17+ also records the NOT NULL above as a
+            -- constraint (contype 'n'); reading both doubled it, and the model
+            -- must read the same on every major.
             'constraints', coalesce((SELECT jsonb_agg(pg_get_constraintdef(c.oid) ORDER BY c.conname)
-                                     FROM pg_constraint c WHERE c.contypid = t.oid), '[]'::jsonb),
+                                     FROM pg_constraint c
+                                     WHERE c.contypid = t.oid AND c.contype = 'c'), '[]'::jsonb),
             'comment',     obj_description(t.oid, 'pg_type')
         ) ORDER BY n.nspname, t.typname)
         FROM pg_type t JOIN ns n ON n.oid = t.typnamespace
