@@ -62,6 +62,9 @@ CREATE TABLE public.users (
     CONSTRAINT users_email_key UNIQUE (email)
 );
 
+CREATE INDEX posts_author_idx ON public.posts USING btree (author_id);
+CREATE INDEX posts_published_idx ON public.posts USING btree (published_at DESC) WHERE (status = 'published'::public.post_status);
+
 ALTER TABLE public.comments ADD CONSTRAINT comments_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE SET NULL;
 ALTER TABLE public.comments ADD CONSTRAINT comments_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.comments(id) ON DELETE CASCADE;
 ALTER TABLE public.comments ADD CONSTRAINT comments_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.posts(id) ON DELETE CASCADE;
@@ -69,9 +72,6 @@ ALTER TABLE public.post_tags ADD CONSTRAINT post_tags_post_id_fkey FOREIGN KEY (
 ALTER TABLE public.post_tags ADD CONSTRAINT post_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
 ALTER TABLE public.posts ADD CONSTRAINT posts_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.users(id);
 ALTER TABLE public.profiles ADD CONSTRAINT profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-CREATE INDEX posts_author_idx ON public.posts USING btree (author_id);
-CREATE INDEX posts_published_idx ON public.posts USING btree (published_at DESC) WHERE (status = 'published'::public.post_status);
 
 CREATE VIEW public.published_posts AS
 SELECT p.id,

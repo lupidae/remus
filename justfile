@@ -42,7 +42,7 @@ fixture PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres":
 # `fixture`; given several, the query must also return the same payload from each
 # (CI passes PostgreSQL 16, 17 and 18). The raw payload, not remus's parse of it:
 # that is what `--print-sql` users get, and parsing would hide some differences.
-roundtrip PGURLS="postgres://postgres:postgres@127.0.0.1:5432/postgres" *SCHEMAS="crates/remus-core/fixtures/showcase.sql crates/remus-core/fixtures/not_null.sql":
+roundtrip PGURLS="postgres://postgres:postgres@127.0.0.1:5432/postgres" *SCHEMAS="crates/remus-core/fixtures/showcase.sql crates/remus-core/fixtures/not_null.sql crates/remus-core/fixtures/replay.sql":
     #!/usr/bin/env bash
     set -euo pipefail
     cargo build -q -p remus

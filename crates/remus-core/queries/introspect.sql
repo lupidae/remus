@@ -106,6 +106,10 @@ cons AS (
     LEFT JOIN pg_namespace rn ON rn.oid = rc.relnamespace
     WHERE c.conrelid IN (SELECT oid FROM rel)
       AND c.contype IN ('p', 'u', 'f', 'c', 'x')
+      -- A foreign key to a partitioned table also gets one constraint per
+      -- referenced partition, on this same table. PostgreSQL derives them from
+      -- the declared one (conparentid) and recreates them with it.
+      AND c.conparentid = 0
     GROUP BY c.conrelid
 ),
 
@@ -209,7 +213,9 @@ SELECT jsonb_build_object(
             'name',        t.typname,
             'base_type',   format_type(t.typbasetype, t.typtypmod),
             'not_null',    t.typnotnull,
-            'default',     t.typdefault,
+            -- Not typdefault: that text was deparsed once, under the search_path
+            -- of whoever created the domain, and can name a type unqualified.
+            'default',     pg_get_expr(t.typdefaultbin, 0),
             -- CHECKs only. PostgreSQL 17+ also records the NOT NULL above as a
             -- constraint (contype 'n'); reading both doubled it, and the model
             -- must read the same on every major.
