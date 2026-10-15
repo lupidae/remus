@@ -44,6 +44,42 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo clippy -p remus --no-default-features --all-targets -- -D warnings
 
+  roundtrip:
+    name: roundtrip (PostgreSQL 16, 17, 18)
+    runs-on: ubuntu-latest
+    # The tests above never see a server. This is the one place that proves the
+    # SQL output replays and that every major reads a schema into the same
+    # payload: 17 and 18 each catalogue NOT NULL somewhere 16 does not.
+    services:
+      pg16:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ["5416:5432"]
+        options: --health-cmd pg_isready --health-interval 2s --health-retries 30
+      pg17:
+        image: postgres:17
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ["5417:5432"]
+        options: --health-cmd pg_isready --health-interval 2s --health-retries 30
+      pg18:
+        image: postgres:18
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ["5418:5432"]
+        options: --health-cmd pg_isready --health-interval 2s --health-retries 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      # psql is the runner's own client; plain SQL files need nothing newer.
+      - run: >-
+          just roundtrip
+          "postgres://postgres:postgres@127.0.0.1:5416/postgres
+          postgres://postgres:postgres@127.0.0.1:5417/postgres
+          postgres://postgres:postgres@127.0.0.1:5418/postgres"
+
   package:
     name: publishable
     runs-on: ubuntu-latest

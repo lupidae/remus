@@ -126,4 +126,5 @@ just check
 just demo                                  # needs DATABASE_URL
 psql "$DATABASE_URL" -Atf crates/remus-core/queries/introspect.sql | remus --input - -f sql
 just roundtrip                             # SQL output replays to the same model (PG 16)
+just roundtrip "$PG16 $PG17 $PG18"         # ...on each, and every major returns the same payload (CI)
 ```

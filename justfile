@@ -35,16 +35,19 @@ fixture PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres":
     psql "$admin" -qc "DROP DATABASE remus_showcase WITH (FORCE)"
     just golden
 
-# prove `-f sql` replays: load SCHEMA into a scratch database, introspect it, render
-# SQL, rebuild the database from that SQL alone and require the same model back.
-# Same database name both times, because the name is part of the model; same
-# PGURL contract as `fixture`.
-roundtrip PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres" SCHEMA="crates/remus-core/fixtures/showcase.sql":
+# prove `-f sql` replays: load each schema into a scratch database, introspect it,
+# render SQL, rebuild the database from that SQL alone and require the same model
+# back. Same database name both times, because the name is part of the model.
+# PGURLS is one or more space-separated servers, each with the PGURL contract of
+# `fixture`; given several, the query must also return the same payload from each
+# (CI passes PostgreSQL 16, 17 and 18). The raw payload, not remus's parse of it:
+# that is what `--print-sql` users get, and parsing would hide some differences.
+roundtrip PGURLS="postgres://postgres:postgres@127.0.0.1:5432/postgres" *SCHEMAS="crates/remus-core/fixtures/showcase.sql crates/remus-core/fixtures/not_null.sql":
     #!/usr/bin/env bash
     set -euo pipefail
     cargo build -q -p remus
-    admin="{{PGURL}}"
-    scratch="{{trim_end_match(PGURL, "/postgres")}}/remus_roundtrip"
+    read -ra servers <<< "{{PGURLS}}"
+    read -ra schemas <<< "{{SCHEMAS}}"
     work="$(mktemp -d)"
     trap 'rm -rf "$work"' EXIT
     fresh() {
@@ -53,16 +56,38 @@ roundtrip PGURL="postgres://postgres:postgres@127.0.0.1:5432/postgres" SCHEMA="c
     canonical() {
         python3 -c 'import sys, json; d = json.load(open(sys.argv[1])); d.pop("generated_at"); print(json.dumps(d, indent=2))' "$1"
     }
-    fresh
-    psql "$scratch" -v ON_ERROR_STOP=1 -q -f "{{SCHEMA}}"
-    target/debug/remus --no-input -u "$scratch" -f json -o "$work/original.json"
-    target/debug/remus --no-input -i "$work/original.json" -f sql -o "$work/schema.sql"
-    fresh
-    psql "$scratch" -v ON_ERROR_STOP=1 -q -f "$work/schema.sql"
-    target/debug/remus --no-input -u "$scratch" -f json -o "$work/replayed.json"
-    psql "$admin" -qc "DROP DATABASE remus_roundtrip WITH (FORCE)"
-    diff -u <(canonical "$work/original.json") <(canonical "$work/replayed.json")
-    echo "{{SCHEMA}}: the SQL output replays to the same model"
+    # Across servers, also drop what describes the server rather than the schema:
+    # its version, and the extension versions it installs by default.
+    portable() {
+        python3 -c 'import sys, json; d = json.load(open(sys.argv[1])); d.pop("generated_at"); d.pop("server_version"); [x.pop("version") for x in d["extensions"]]; print(json.dumps(d, indent=2))' "$1"
+    }
+    for schema in "${schemas[@]}"; do
+        first=""
+        for admin in "${servers[@]}"; do
+            scratch="${admin%/postgres}/remus_roundtrip"
+            version="$(psql "$admin" -XAtc 'SHOW server_version')"
+            version="${version%% *}"
+            fresh
+            psql "$scratch" -v ON_ERROR_STOP=1 -q -f "$schema"
+            psql "$scratch" -XAtf crates/remus-core/queries/introspect.sql > "$work/payload.json"
+            target/debug/remus --no-input -u "$scratch" -f json -o "$work/original.json"
+            target/debug/remus --no-input -i "$work/original.json" -f sql -o "$work/schema.sql"
+            fresh
+            psql "$scratch" -v ON_ERROR_STOP=1 -q -f "$work/schema.sql"
+            target/debug/remus --no-input -u "$scratch" -f json -o "$work/replayed.json"
+            psql "$admin" -qc "DROP DATABASE remus_roundtrip WITH (FORCE)"
+            diff -u <(canonical "$work/original.json") <(canonical "$work/replayed.json")
+            echo "$schema on PostgreSQL $version: the SQL output replays to the same model"
+            payload="$work/$(basename "$schema" .sql)@$version.json"
+            portable "$work/payload.json" > "$payload"
+            if [ -z "$first" ]; then
+                first="$payload"
+            else
+                diff -u "$first" "$payload"
+                echo "$schema on PostgreSQL $version: the same payload as on $(basename "$first" .json)"
+            fi
+        done
+    done
 
 # regenerate examples/*/ outputs from each example's schema.sql (same PGURL contract
 # as `fixture`). Outputs are committed so the examples page renders on GitHub.
