@@ -54,8 +54,10 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
 - **`is_junction` is the only heuristic** and stays conservative: exactly two
   FKs, every column an FK column, generated, or in `HOUSEKEEPING`. Polymorphic
   associations are never inferred.
-- **Leaf partitions are not entities**; they are listed under `partitions`.
-  One box per partitioned table, not forty.
+- **Partitions are not entities**, leaf or sub-partitioned; they are listed
+  under `partitions`. One box per partitioned table, not forty. A partition
+  that is partitioned in turn carries its own `partition_key` there, and the
+  SQL emitter creates partitions parent first.
 - **Identity is qualified names, never OIDs.** OIDs change on restore and differ
   between environments. Nothing physical that varies between two restores of
   the same schema belongs in the model (that is why `attnum` is not carried).
@@ -118,4 +120,5 @@ A proposed feature either strengthens one of these or belongs in pgModeler.
 just check
 just demo                                  # needs DATABASE_URL
 psql "$DATABASE_URL" -Atf crates/remus-core/queries/introspect.sql | remus --input - -f sql
+just roundtrip                             # SQL output replays to the same model (PG 16)
 ```

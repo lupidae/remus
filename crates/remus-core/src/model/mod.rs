@@ -305,6 +305,11 @@ pub struct Partition {
     pub child: String,
     /// `FOR VALUES ...` or `DEFAULT`.
     pub bound: Option<String>,
+    /// `pg_get_partkeydef` when the partition is partitioned in turn, e.g.
+    /// `LIST (kind)`. Payloads captured before multi-level trees were modelled
+    /// lack the field and read as single-level.
+    #[serde(default)]
+    pub partition_key: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -474,6 +479,42 @@ mod tests {
         let canonical = schema.clone().canonical();
         assert!(canonical.generated_at.is_none());
         assert_eq!(canonical.entities, schema.entities);
+    }
+
+    #[test]
+    fn a_sub_partitioned_partition_carries_its_own_key() {
+        let payload = MINIMAL.replace(
+            r#""entities": ["#,
+            r#""partitions": [
+                {"parent_schema": "public", "parent": "events", "child_schema": "public",
+                 "child": "events_2024", "bound": "FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')",
+                 "partition_key": "LIST (kind)"},
+                {"parent_schema": "public", "parent": "events_2024", "child_schema": "public",
+                 "child": "events_2024_click", "bound": "FOR VALUES IN ('click')",
+                 "partition_key": null}
+            ],
+            "entities": ["#,
+        );
+        let schema = Schema::from_json(&payload).unwrap();
+        assert_eq!(
+            schema.partitions[0].partition_key.as_deref(),
+            Some("LIST (kind)")
+        );
+        assert_eq!(schema.partitions[1].partition_key, None);
+    }
+
+    #[test]
+    fn partitions_captured_before_sub_partition_keys_still_parse() {
+        let payload = MINIMAL.replace(
+            r#""entities": ["#,
+            r#""partitions": [
+                {"parent_schema": "public", "parent": "events", "child_schema": "public",
+                 "child": "events_default", "bound": "DEFAULT"}
+            ],
+            "entities": ["#,
+        );
+        let schema = Schema::from_json(&payload).unwrap();
+        assert_eq!(schema.partitions[0].partition_key, None);
     }
 
     #[test]

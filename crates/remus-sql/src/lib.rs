@@ -6,12 +6,12 @@
 //! scratch copy of a schema, and reading a schema diff as SQL in a pull request.
 //!
 //! Statement order is dependency-correct: schemas, extensions, types, sequences,
-//! tables, partitions, foreign keys (as `ALTER TABLE`, after every table exists,
-//! because circular references are legal), indexes, views in dependency order,
-//! row level security, comments.
+//! tables, partitions parent first, foreign keys (as `ALTER TABLE`, after every
+//! table exists, because circular references are legal), indexes, views in
+//! dependency order, row level security, comments.
 
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     fmt::Write,
 };
 
@@ -22,7 +22,8 @@ use remus_core::{
         ident::{qualified, quote_ident, quote_literal},
     },
     model::{
-        Column, ConstraintKind, Entity, EntityKind, Generated, Identity, PolicyCommand, RelationRef,
+        Column, ConstraintKind, Entity, EntityKind, Generated, Identity, Partition, PolicyCommand,
+        RelationRef,
     },
 };
 
@@ -277,17 +278,69 @@ fn column_definition(column: &Column) -> String {
 }
 
 fn write_partitions(out: &mut String, schema: &Schema) {
-    for p in &schema.partitions {
+    for p in parent_first(&schema.partitions) {
         let bound = p.bound.as_deref().unwrap_or("DEFAULT");
-        let _ = writeln!(
+        let _ = write!(
             out,
-            "CREATE TABLE {} PARTITION OF {} {bound};",
+            "CREATE TABLE {} PARTITION OF {} {bound}",
             qualified(&p.child_schema, &p.child),
             qualified(&p.parent_schema, &p.parent)
         );
+        if let Some(key) = &p.partition_key {
+            let _ = write!(out, " PARTITION BY {key}");
+        }
+        out.push_str(";\n");
     }
     if !schema.partitions.is_empty() {
         out.push('\n');
+    }
+}
+
+type TableName<'a> = (&'a str, &'a str);
+
+/// `PARTITION OF` needs a parent that already exists and is already
+/// partitioned, and a sub-partitioned partition is such a parent. Walking the
+/// tree from each root guarantees that and keeps a subtree together; siblings
+/// are sorted so the output depends on the tree, not on the payload's order.
+fn parent_first(partitions: &[Partition]) -> Vec<&Partition> {
+    let mut children: BTreeMap<TableName, Vec<&Partition>> = BTreeMap::new();
+    for p in partitions {
+        children
+            .entry((&p.parent_schema, &p.parent))
+            .or_default()
+            .push(p);
+    }
+    let attached: HashSet<TableName> = partitions
+        .iter()
+        .map(|p| (p.child_schema.as_str(), p.child.as_str()))
+        .collect();
+    let roots: Vec<TableName> = children
+        .keys()
+        .copied()
+        .filter(|parent| !attached.contains(parent))
+        .collect();
+    let mut ordered = Vec::with_capacity(partitions.len());
+    for root in roots {
+        attach_below(root, &mut children, &mut ordered);
+    }
+    // Only a hand-edited payload can hold a cycle, which no walk from a root
+    // reaches; emit it rather than drop it.
+    ordered.extend(children.into_values().flatten());
+    ordered
+}
+
+fn attach_below<'a>(
+    parent: TableName<'a>,
+    children: &mut BTreeMap<TableName<'a>, Vec<&'a Partition>>,
+    ordered: &mut Vec<&'a Partition>,
+) {
+    let Some(mut siblings) = children.remove(&parent) else {
+        return;
+    };
+    siblings.sort_by_key(|p| (p.child_schema.as_str(), p.child.as_str()));
+    for p in siblings {
+        ordered.push(p);
+        attach_below((&p.child_schema, &p.child), children, ordered);
     }
 }
 
@@ -499,12 +552,79 @@ fn write_comments(out: &mut String, schema: &Schema) {
 
 #[cfg(test)]
 mod tests {
-    use remus_core::{Schema, fixtures::SHOWCASE};
+    use remus_core::{Schema, fixtures::SHOWCASE, model::Partition};
 
     use super::{owned_sequence, render};
 
     fn showcase() -> Schema {
         Schema::from_json(SHOWCASE).unwrap()
+    }
+
+    fn partition(parent: &str, child: &str, bound: &str, key: Option<&str>) -> Partition {
+        Partition {
+            parent_schema: "public".to_owned(),
+            parent: parent.to_owned(),
+            child_schema: "public".to_owned(),
+            child: child.to_owned(),
+            bound: Some(bound.to_owned()),
+            partition_key: key.map(str::to_owned),
+        }
+    }
+
+    fn with_partitions(partitions: Vec<Partition>) -> Schema {
+        let mut schema = Schema::from_json(
+            r#"{"remus_version": "0.1", "database": "db", "server_version": "17"}"#,
+        )
+        .unwrap();
+        schema.partitions = partitions;
+        schema
+    }
+
+    /// RANGE, then LIST below two of the ranges (one of them the DEFAULT
+    /// partition), then leaves, one of which is the LIST level's DEFAULT.
+    /// `order` permutes the payload, which the output must not depend on.
+    fn three_level_tree(order: &[usize]) -> Schema {
+        let tree = [
+            partition(
+                "events",
+                "events_2024",
+                "FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')",
+                Some("LIST (kind)"),
+            ),
+            partition(
+                "events",
+                "events_2025",
+                "FOR VALUES FROM ('2025-01-01') TO ('2026-01-01')",
+                None,
+            ),
+            partition("events", "events_default", "DEFAULT", Some("LIST (kind)")),
+            partition(
+                "events_2024",
+                "events_2024_click",
+                "FOR VALUES IN ('click')",
+                None,
+            ),
+            partition("events_2024", "events_2024_other", "DEFAULT", None),
+            partition(
+                "events_2024",
+                "events_2024_view",
+                "FOR VALUES IN ('view')",
+                None,
+            ),
+            partition(
+                "events_default",
+                "events_default_click",
+                "FOR VALUES IN ('click')",
+                None,
+            ),
+        ];
+        with_partitions(order.iter().map(|&i| tree[i].clone()).collect())
+    }
+
+    fn partition_statements(sql: &str) -> Vec<&str> {
+        sql.lines()
+            .filter(|l| l.contains(" PARTITION OF "))
+            .collect()
     }
 
     #[test]
@@ -555,6 +675,57 @@ mod tests {
         assert!(sql.contains("CREATE SEQUENCE IF NOT EXISTS shop.orders_id_seq;"));
         assert!(sql.contains("ALTER SEQUENCE shop.orders_id_seq OWNED BY shop.orders.id;"));
         assert!(sql.contains("\"select\" text"));
+    }
+
+    #[test]
+    fn a_partition_partitioned_in_turn_keeps_its_key() {
+        let sql = render(&three_level_tree(&[0, 1, 2, 3, 4, 5, 6]));
+        assert!(sql.contains(
+            "CREATE TABLE public.events_2024 PARTITION OF public.events FOR VALUES FROM ('2024-01-01') TO ('2025-01-01') PARTITION BY LIST (kind);"
+        ));
+        assert!(sql.contains(
+            "CREATE TABLE public.events_default PARTITION OF public.events DEFAULT PARTITION BY LIST (kind);"
+        ));
+        assert!(sql.contains(
+            "CREATE TABLE public.events_2024_other PARTITION OF public.events_2024 DEFAULT;"
+        ));
+        assert!(sql.contains(
+            "CREATE TABLE public.events_2025 PARTITION OF public.events FOR VALUES FROM ('2025-01-01') TO ('2026-01-01');"
+        ));
+    }
+
+    #[test]
+    fn partitions_follow_their_parent_whatever_the_payload_order() {
+        let expected = [
+            "public.events_2024 PARTITION OF public.events ",
+            "public.events_2024_click PARTITION OF public.events_2024 ",
+            "public.events_2024_other PARTITION OF public.events_2024 ",
+            "public.events_2024_view PARTITION OF public.events_2024 ",
+            "public.events_2025 PARTITION OF public.events ",
+            "public.events_default PARTITION OF public.events ",
+            "public.events_default_click PARTITION OF public.events_default ",
+        ];
+        for order in [
+            [0, 1, 2, 3, 4, 5, 6],
+            [6, 5, 4, 3, 2, 1, 0],
+            [3, 6, 0, 4, 2, 5, 1],
+        ] {
+            let sql = render(&three_level_tree(&order));
+            let statements = partition_statements(&sql);
+            assert_eq!(statements.len(), expected.len(), "{order:?}");
+            for (statement, want) in statements.iter().zip(expected) {
+                assert!(statement.contains(want), "{order:?}: {statement}");
+            }
+        }
+    }
+
+    #[test]
+    fn a_partition_cycle_is_emitted_rather_than_dropped() {
+        let schema = with_partitions(vec![
+            partition("a", "b", "DEFAULT", Some("LIST (kind)")),
+            partition("b", "a", "DEFAULT", Some("LIST (kind)")),
+        ]);
+        assert_eq!(partition_statements(&render(&schema)).len(), 2);
     }
 
     #[test]

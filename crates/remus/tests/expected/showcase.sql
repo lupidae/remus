@@ -108,6 +108,9 @@ CREATE TABLE shop.warehouses (
 );
 
 CREATE TABLE audit.events_2026 PARTITION OF audit.events FOR VALUES FROM ('2026-01-01 00:00:00+00') TO ('2027-01-01 00:00:00+00');
+CREATE TABLE audit.events_2027 PARTITION OF audit.events FOR VALUES FROM ('2027-01-01 00:00:00+00') TO ('2028-01-01 00:00:00+00') PARTITION BY HASH (id);
+CREATE TABLE audit.events_2027_h0 PARTITION OF audit.events_2027 FOR VALUES WITH (modulus 2, remainder 0);
+CREATE TABLE audit.events_2027_h1 PARTITION OF audit.events_2027 FOR VALUES WITH (modulus 2, remainder 1);
 CREATE TABLE audit.events_default PARTITION OF audit.events DEFAULT;
 
 ALTER TABLE audit.events ADD CONSTRAINT events_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES shop.customers(id);

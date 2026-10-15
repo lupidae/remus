@@ -109,6 +109,15 @@ CREATE TABLE audit.events_2026 PARTITION OF audit.events
     FOR VALUES FROM ('2026-01-01') TO ('2027-01-01');
 CREATE TABLE audit.events_default PARTITION OF audit.events DEFAULT;
 
+-- A partition partitioned in turn, so the tree has three levels. Its key can
+-- only be on a primary key column: a partitioned table's PK covers every level.
+CREATE TABLE audit.events_2027 PARTITION OF audit.events
+    FOR VALUES FROM ('2027-01-01') TO ('2028-01-01') PARTITION BY HASH (id);
+CREATE TABLE audit.events_2027_h0 PARTITION OF audit.events_2027
+    FOR VALUES WITH (MODULUS 2, REMAINDER 0);
+CREATE TABLE audit.events_2027_h1 PARTITION OF audit.events_2027
+    FOR VALUES WITH (MODULUS 2, REMAINDER 1);
+
 CREATE UNLOGGED TABLE audit.scratch (id int PRIMARY KEY);
 
 -- Row level security with a restrictive policy and a role-scoped one. Roles are

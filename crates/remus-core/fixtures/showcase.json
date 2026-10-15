@@ -1364,14 +1364,40 @@
       "child": "events_2026",
       "parent": "events",
       "child_schema": "audit",
-      "parent_schema": "audit"
+      "parent_schema": "audit",
+      "partition_key": null
+    },
+    {
+      "bound": "FOR VALUES FROM ('2027-01-01 00:00:00+00') TO ('2028-01-01 00:00:00+00')",
+      "child": "events_2027",
+      "parent": "events",
+      "child_schema": "audit",
+      "parent_schema": "audit",
+      "partition_key": "HASH (id)"
     },
     {
       "bound": "DEFAULT",
       "child": "events_default",
       "parent": "events",
       "child_schema": "audit",
-      "parent_schema": "audit"
+      "parent_schema": "audit",
+      "partition_key": null
+    },
+    {
+      "bound": "FOR VALUES WITH (modulus 2, remainder 0)",
+      "child": "events_2027_h0",
+      "parent": "events_2027",
+      "child_schema": "audit",
+      "parent_schema": "audit",
+      "partition_key": null
+    },
+    {
+      "bound": "FOR VALUES WITH (modulus 2, remainder 1)",
+      "child": "events_2027_h1",
+      "parent": "events_2027",
+      "child_schema": "audit",
+      "parent_schema": "audit",
+      "partition_key": null
     }
   ],
   "remus_version": "0.1",

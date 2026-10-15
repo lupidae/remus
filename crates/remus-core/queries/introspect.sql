@@ -43,8 +43,9 @@ rel AS (
     FROM pg_class c
     JOIN ns n ON n.oid = c.relnamespace
     WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f')
-      -- Leaf partitions are one box too many on a diagram; they are listed
-      -- separately under `partitions` with their bounds.
+      -- Partitions are one box too many on a diagram; they are listed
+      -- separately under `partitions` with their bounds, and with their own
+      -- key when they are partitioned in turn.
       AND NOT c.relispartition
 ),
 
@@ -244,7 +245,11 @@ SELECT jsonb_build_object(
             'parent',        pc.relname,
             'child_schema',  cn2.nspname,
             'child',         c.relname,
-            'bound',         pg_get_expr(c.relpartbound, c.oid)
+            'bound',         pg_get_expr(c.relpartbound, c.oid),
+            -- A sub-partitioned partition is not an entity, so this is the only
+            -- place its key can live; without it nothing can attach below it.
+            'partition_key', CASE WHEN c.relkind = 'p'
+                                  THEN pg_get_partkeydef(c.oid) END
         ) ORDER BY pn.nspname, pc.relname, c.relname)
         FROM pg_class c
         JOIN pg_inherits inh  ON inh.inhrelid = c.oid
