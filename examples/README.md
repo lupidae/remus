@@ -6,9 +6,9 @@ it, with `just examples`. Nothing here is hand-edited. Two schemas:
 - **[blog](blog/schema.sql)**: six tables, an enum, a self-referencing FK, a junction
   table and a view. Small enough to read in one screen.
 - **[showcase](showcase/schema.sql)**: the fixture behind the test suite. Two schemas,
-  domains, a composite type, arrays, a partitioned table, generated and identity
-  columns, a composite foreign key, an exclusion constraint, row level security,
-  views over views and a materialized view.
+  domains, a composite type, arrays, a partitioned table with a partition partitioned
+  in turn, generated and identity columns, a composite foreign key, an exclusion
+  constraint, row level security, views over views and a materialized view.
 
 The diagrams below are the Mermaid output rendered by GitHub itself.
 
@@ -473,6 +473,7 @@ erDiagram
 ### The rest
 
 - [`out/schema.sql`](showcase/out/schema.sql): partitioned table and its partitions,
+  parent first, the sub-partitioned one with its own `PARTITION BY`,
   `GENERATED ALWAYS AS (...) STORED`, a bare sequence for the `bigserial`, the
   exclusion constraint, the restrictive RLS policy, materialized view `WITH NO DATA`.
 - [`out/schema.dbml`](showcase/out/schema.dbml): `TableGroup` per schema, the composite

@@ -1,6 +1,6 @@
 {
   "remus_version": "0.1",
-  "generated_at": "2026-09-16T18:17:32.850599+00:00",
+  "generated_at": "2026-10-15T09:46:00.378063+00:00",
   "database": "remus_example_showcase",
   "server_version": "16.14 (Debian 16.14-1.pgdg13+1)",
   "entities": [
@@ -1355,14 +1355,40 @@
       "parent": "events",
       "child_schema": "audit",
       "child": "events_2026",
-      "bound": "FOR VALUES FROM ('2026-01-01 00:00:00+00') TO ('2027-01-01 00:00:00+00')"
+      "bound": "FOR VALUES FROM ('2026-01-01 00:00:00+00') TO ('2027-01-01 00:00:00+00')",
+      "partition_key": null
+    },
+    {
+      "parent_schema": "audit",
+      "parent": "events",
+      "child_schema": "audit",
+      "child": "events_2027",
+      "bound": "FOR VALUES FROM ('2027-01-01 00:00:00+00') TO ('2028-01-01 00:00:00+00')",
+      "partition_key": "HASH (id)"
     },
     {
       "parent_schema": "audit",
       "parent": "events",
       "child_schema": "audit",
       "child": "events_default",
-      "bound": "DEFAULT"
+      "bound": "DEFAULT",
+      "partition_key": null
+    },
+    {
+      "parent_schema": "audit",
+      "parent": "events_2027",
+      "child_schema": "audit",
+      "child": "events_2027_h0",
+      "bound": "FOR VALUES WITH (modulus 2, remainder 0)",
+      "partition_key": null
+    },
+    {
+      "parent_schema": "audit",
+      "parent": "events_2027",
+      "child_schema": "audit",
+      "child": "events_2027_h1",
+      "bound": "FOR VALUES WITH (modulus 2, remainder 1)",
+      "partition_key": null
     }
   ],
   "extensions": [
