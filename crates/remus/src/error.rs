@@ -20,6 +20,21 @@ pub enum Error {
     Database(#[from] tokio_postgres::Error),
     #[error(transparent)]
     Schema(#[from] remus_core::Error),
+    #[cfg(not(feature = "push"))]
+    #[error("this build cannot push: install with `cargo install remus --features push`")]
+    PushUnavailable,
+    #[cfg(feature = "push")]
+    #[error("could not reach romulus")]
+    Push(#[source] ureq::Error),
+    #[cfg(feature = "push")]
+    #[error("romulus refused the push: {0}")]
+    PushRefused(String),
+    #[cfg(feature = "push")]
+    #[error("romulus sent an answer remus does not understand")]
+    PushAnswer,
+    #[cfg(feature = "push")]
+    #[error("the push was interrupted")]
+    PushInterrupted,
     /// Ctrl-C or Esc in the guided flow: the user's own decision, not a failure
     /// to report.
     #[cfg(feature = "guided")]

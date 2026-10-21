@@ -21,6 +21,9 @@ default = ["guided"]
 # links no prompting code at all, for CI images and minimal builds; every flag
 # keeps working, `remus` on its own just reports that it needs a database.
 guided = ["dep:inquire", "dep:owo-colors"]
+# `remus push`: send the schema to romulus. Off by default so the CLI stays
+# free of an HTTP client unless asked; release binaries enable it.
+push = ["dep:ureq", "dep:serde", "dep:serde_json"]
 
 [dependencies]
 remus-core.workspace = true
@@ -49,3 +52,7 @@ rustls = { version = "0.23.45", default-features = false, features = ["ring", "s
 webpki-roots = "1.0.9"
 inquire = { version = "0.9.4", default-features = false, features = ["crossterm", "macros"], optional = true }
 owo-colors = { version = "4.4.0", default-features = false, optional = true }
+# Same TLS stance as the Postgres connection: rustls with ring, public roots.
+ureq = { version = "3.4.2", default-features = false, features = ["rustls"], optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }

@@ -5,6 +5,8 @@ pub mod cli;
 mod error;
 pub mod format;
 mod introspect;
+#[cfg(feature = "push")]
+mod push;
 
 #[cfg(feature = "guided")]
 mod guide;

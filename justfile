@@ -9,7 +9,9 @@ fmt:
 check: fmt
     cargo check --all-targets
     cargo clippy --all-targets -- -D warnings
+    cargo clippy -p remus --features push --all-targets -- -D warnings
     cargo test
+    cargo test -p remus --features push
 
 # regenerate the golden files after an intentional emitter change, then review the diff
 golden:

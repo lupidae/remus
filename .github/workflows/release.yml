@@ -59,6 +59,9 @@ jobs:
         with:
           bin: remus
           target: ${{ matrix.target }}
+          # `remus push` is opt-in for `cargo install`, but a downloaded binary
+          # (and the image built from it) is what CI jobs push with.
+          features: push
           # github.ref is a branch on a manual run, so name the tag explicitly.
           ref: refs/tags/${{ github.event.inputs.tag || github.ref_name }}
           archive: $bin-$target

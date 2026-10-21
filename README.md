@@ -87,6 +87,20 @@ remus -i schema.json -f all --out-dir docs/schema
 One statement against `pg_catalog`. Never `information_schema`, never a row of your
 data. Read it before you run it.
 
+## Push to romulus
+
+romulus keeps your schema versioned, diffed and designed together. A push from
+CI makes the real database a new version, and pushing an unchanged schema
+stores nothing:
+
+```bash
+export ROMULUS_URL=https://… ROMULUS_TOKEN=rmls_…   # the database's settings in romulus
+remus -u "$DATABASE_URL" push -m "after migration 42"
+```
+
+Release binaries and the image include it; with cargo, install
+`--features push`.
+
 ## What it keeps
 
 Enums, domains, composite types, partitioned tables, row level security, identity and
